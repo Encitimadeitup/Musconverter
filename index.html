@@ -12,11 +12,13 @@
   <!-- Tailwind (bản CDN: không cần cài đặt gì) -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
-    tailwind.config = {
-      theme: { extend: {
-        colors: { mist: '#E9EFEE', paper: '#FBFCFA', ink: '#0E2A2B', pine: '#1F6F6B', pinedark: '#17524F', brass: '#B07D1E', brassdark: '#7A5410', rule: '#C9D6D3' },
-      } },
-    };
+    if (window.tailwind) {
+      tailwind.config = {
+        theme: { extend: {
+          colors: { mist: '#E9EFEE', paper: '#FBFCFA', ink: '#0E2A2B', pine: '#1F6F6B', pinedark: '#17524F', brass: '#B07D1E', brassdark: '#7A5410', rule: '#C9D6D3' },
+        } },
+      };
+    }
   </script>
 
   <style>
@@ -64,7 +66,7 @@
       <svg id="tines" width="170" height="64" viewBox="0 0 170 64" aria-hidden="true"></svg>
       <div class="min-w-0 flex-1">
         <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Ký âm một hàng</h1>
-        <p class="mt-1 max-w-xl text-sm text-mist/75">Biến MIDI, MP3, video YouTube, ảnh sheet hoặc dãy nốt bạn gõ thành một hàng nốt dễ đánh cho Kalimba 17 phím, Organ và Piano.</p>
+        <p class="mt-1 max-w-xl text-sm text-mist/75">Chuyển nhạc thành ký âm một hàng dễ tập. MIDI được xử lý trực tiếp; âm thanh cần backend, còn OCR ảnh hiện chỉ đọc ký tự/số chứ chưa nhận diện khuông nhạc tự động.</p>
       </div>
     </div>
   </header>
@@ -75,7 +77,7 @@
     <div class="no-print space-y-6">
 
       <section class="rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-source">
-        <h2 id="h-source" class="mb-3 text-base font-semibold">Nguồn nhạc</h2>
+        <h2 id="h-source" class="mb-1 text-base font-semibold">Bước 1 · Chọn nguồn nhạc</h2><p class="mb-3 text-xs text-ink/65">Bắt đầu bằng MIDI hoặc dãy nốt để có kết quả dễ kiểm tra nhất. Sau khi chuyển đổi, nghe thử và rà lại nốt trước khi xuất.</p>
 
         <div role="tablist" aria-label="Chọn nguồn nhạc" class="mb-4 flex flex-wrap gap-1">
           <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="midi" aria-selected="true">MIDI</button>
@@ -106,10 +108,10 @@
         </div>
 
         <div id="panel-ocr" data-panel="ocr" class="hidden space-y-2">
-          <label class="block text-sm" for="ocrFile">Chụp hoặc chọn ảnh sheet / tab</label>
+          <label class="block text-sm" for="ocrFile">Chọn ảnh tab số / ký âm dạng chữ</label>
           <input id="ocrFile" type="file" accept="image/*" class="field" />
           <button id="btnOcr" class="btn btn-primary w-full" type="button">Quét chữ và số</button>
-          <p class="text-xs text-ink/70">Chạy ngay trên trình duyệt. Quét chữ hay nhầm lẫn, bạn sẽ được sửa lại trước khi chuyển đổi.</p>
+          <p class="text-xs text-ink/70">Chạy ngay trên trình duyệt. Đây là OCR ký tự, không phải OMR khuông nhạc. Hãy kiểm tra và sửa kết quả trước khi chuyển đổi.</p>
         </div>
 
         <div id="panel-text" data-panel="text" class="hidden space-y-2">
@@ -131,7 +133,7 @@
       </section>
 
       <section class="rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-settings">
-        <h2 id="h-settings" class="mb-3 text-base font-semibold">Cách đánh</h2>
+        <h2 id="h-settings" class="mb-1 text-base font-semibold">Bước 2 · Cấu hình bản nhạc</h2><p class="mb-3 text-xs text-ink/65">Ưu tiên giữ nguyên cao độ. Tự động dịch tông và dời quãng tám có thể làm thay đổi bản gốc; hãy nghe thử sau mỗi lần đổi.</p>
         <div class="space-y-3">
           <div>
             <label class="mb-1 block text-sm" for="instrument">Nhạc cụ</label>
@@ -172,7 +174,7 @@
             <legend class="sr-only">Tùy chọn</legend>
             <label class="flex items-center gap-2"><input id="optChords" type="checkbox" checked /> Hiện hợp âm phía trên</label>
             <label class="flex items-center gap-2"><input id="optDash" type="checkbox" checked /> Hiện dấu - cho nốt kéo dài</label>
-            <label class="flex items-center gap-2"><input id="optSnap" type="checkbox" checked /> Ép về phím trắng</label>
+            <label class="flex items-start gap-2"><input id="optSnap" type="checkbox" class="mt-1" /> Làm tròn nốt thăng/giáng về phím trắng <span class="text-xs text-ink/65">(có thể đổi cao độ; mặc định tắt)</span></label>
           </fieldset>
         </div>
       </section>
@@ -181,7 +183,18 @@
         <h2 id="h-lyrics" class="mb-1 text-base font-semibold">Lời bài hát và hợp âm (tùy chọn)</h2>
         <p class="mb-2 text-xs text-ink/70">Mỗi dòng lời ứng với một dòng nốt, theo thứ tự. Gõ hợp âm trong ngoặc vuông ngay trước chữ. Hợp âm sẽ hiện phía trên dòng nốt, lời hiện bên dưới.</p>
         <label class="sr-only" for="lyricsInput">Lời bài hát kèm hợp âm</label>
-        <textarea id="lyricsInput" rows="5" class="field" spellcheck="false" placeholder="[C]Lấp lánh [F]ngôi [C]sao&#10;[F]Trên trời [G]cao [C]kia"></textarea>
+        <textarea id="lyricsInput" rows="5" class="field" spellcheck="false" placeholder="[Dm7]Cho anh một chút hy vọng [G]được không yah&#10;[C]Chắc em đang cầm tay [Am7]một người nào"></textarea>
+        <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <label class="mb-1 block text-sm" for="chordPattern">Cách chuyển hợp âm thành nốt</label>
+            <select id="chordPattern" class="field">
+              <option value="up">Rải đi lên (ví dụ D–F–A–C)</option>
+              <option value="down">Rải đi xuống (ví dụ C–A–F–D)</option>
+            </select>
+          </div>
+          <button id="btnChordNotes" class="btn btn-primary" type="button">Tách hợp âm thành nốt</button>
+        </div>
+        <p class="mt-2 text-xs text-ink/70">Dán lời có ký hiệu hợp âm kiểu ChordPro như <code>[Dm7]Cho anh… [G]được không</code>. Nút này tạo một dòng nốt rải cho từng hợp âm, có thể nghe thử và xuất Word/PDF. Vì lời không chứa thời lượng/nhịp chính xác, bản rải hợp âm là bản nháp đều nhịp, không tự suy ra giai điệu hát.</p>
       </section>
     </div>
 
@@ -194,7 +207,7 @@
       </section>
 
       <section class="no-print rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-actions">
-        <h2 id="h-actions" class="mb-3 text-base font-semibold">Lưu và nghe thử</h2>
+        <h2 id="h-actions" class="mb-1 text-base font-semibold">Bước 3 · Nghe thử và xuất</h2><p class="mb-3 text-xs text-ink/65">Bản chuyển đổi tự động là bản nháp để tập, không đảm bảo chính xác tuyệt đối. Hãy nghe đối chiếu trước khi dùng.</p>
         <div class="mb-3 grid gap-3 sm:grid-cols-[1fr_8rem]">
           <div>
             <label class="mb-1 block text-sm" for="titleInput">Tên bài hát</label>
@@ -207,13 +220,29 @@
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="btnPlay" class="btn btn-primary" type="button">Phát âm thanh</button>
+          <button id="btnSlow" class="btn" type="button">Phát chậm 0.5×</button>
           <button id="btnCopy" class="btn" type="button">Copy 1-Click</button>
+          <button id="btnEdit" class="btn" type="button">Sửa dãy nốt</button>
           <button id="btnDocx" class="btn" type="button">Tải file Word (.docx)</button>
           <button id="btnPrint" class="btn" type="button">In / Tải PDF</button>
+          <button id="btnShare" class="btn" type="button">Chia sẻ bản này</button>
+        </div>
+        <label class="mt-3 flex items-start gap-2 text-sm">
+          <input id="optLoop" type="checkbox" class="mt-1" />
+          <span>Lặp lại bản nhạc khi phát để luyện theo vòng</span>
+        </label>
+        <div id="editPanel" class="mt-4 hidden rounded-lg border border-rule bg-white p-3">
+          <label class="mb-1 block text-sm font-semibold" for="notationEditor">Sửa dãy nốt</label>
+          <p class="mb-2 text-xs text-ink/65">Sửa ký hiệu số/chữ trong ô dưới đây. Hợp âm có thể viết như [Dm7]. Lời bài hát vẫn lấy từ ô lời/hợp âm bên trái. Khi áp dụng, chuyển tông đặt về “Giữ nguyên” để không dịch nốt hai lần.</p>
+          <textarea id="notationEditor" rows="5" class="field font-mono" spellcheck="false"></textarea>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button id="btnApplyEdits" class="btn btn-primary" type="button">Áp dụng dãy nốt</button>
+            <button id="btnCancelEdits" class="btn" type="button">Hủy</button>
+          </div>
         </div>
         <label class="mt-4 flex items-start gap-2 text-sm">
-          <input id="optShare" type="checkbox" checked class="mt-1" />
-          <span>Chia sẻ bản nhạc này vào kho cộng đồng (ẩn danh). Bản chia sẻ chỉ hiện công khai sau khi quản trị viên duyệt. Bỏ chọn nếu bạn không muốn chia sẻ.</span>
+          <input id="optShare" type="checkbox" class="mt-1" />
+          <span>Tôi đồng ý gửi bản ký âm và thông tin nguồn lên kho cộng đồng. Mặc định tắt; chỉ bật khi bạn có quyền chia sẻ nội dung này.</span>
         </label>
       </section>
 
@@ -292,14 +321,25 @@
     piano:     { label: 'Piano, tay phải (C4–C6)', min: 60, max: 84, baseOctave: 4, synth: 'piano' },
   };
 
-  // Các hợp âm thuận tai của cung C trưởng (đều là phím trắng)
+  // Hợp âm diatonic thường gặp trong C trưởng / A thứ. Đây là bộ suy luận cơ bản,
+  // không phải nhận diện hòa âm đầy đủ; người dùng vẫn nên kiểm tra kết quả.
   const CHORDS = [
-    { name: 'C',  pcs: [0, 4, 7] },
-    { name: 'Dm', pcs: [2, 5, 9] },
-    { name: 'Em', pcs: [4, 7, 11] },
-    { name: 'F',  pcs: [5, 9, 0] },
-    { name: 'G',  pcs: [7, 11, 2] },
-    { name: 'Am', pcs: [9, 0, 4] },
+    { name: 'C',      pcs: [0, 4, 7] },
+    { name: 'Cmaj7',  pcs: [0, 4, 7, 11] },
+    { name: 'Cadd9',  pcs: [0, 2, 4, 7] },
+    { name: 'Csus2',  pcs: [0, 2, 7] },
+    { name: 'Dm',     pcs: [2, 5, 9] },
+    { name: 'Dm7',    pcs: [2, 5, 9, 0] },
+    { name: 'Em',     pcs: [4, 7, 11] },
+    { name: 'Em7',    pcs: [4, 7, 11, 2] },
+    { name: 'F',      pcs: [5, 9, 0] },
+    { name: 'Fmaj7',  pcs: [5, 9, 0, 4] },
+    { name: 'G',      pcs: [7, 11, 2] },
+    { name: 'G7',     pcs: [7, 11, 2, 5] },
+    { name: 'Am',     pcs: [9, 0, 4] },
+    { name: 'Am7',    pcs: [9, 0, 4, 7] },
+    { name: 'Bdim',   pcs: [11, 2, 5] },
+    { name: 'Bm7b5',  pcs: [11, 2, 5, 9] },
   ];
 
   const mod12 = (n) => ((n % 12) + 12) % 12;
@@ -308,16 +348,36 @@
 
   /* ---------- 1. DỊCH TÔNG ---------- */
 
-  // Thử 12 cách dịch, chọn cách nhiều nốt rơi vào phím trắng nhất.
-  // Hòa điểm -> chọn cách dịch ít nhất. (Âm giai thứ tự nhiên như La thứ cũng toàn phím trắng nên được giữ nguyên.)
-  function bestTranspose(pitches) {
-    let best = 0, bestScore = -1;
-    for (let s = -5; s <= 6; s++) {
-      let score = 0;
-      for (const p of pitches) if (WHITE[mod12(p + s)]) score++;
-      if (score > bestScore || (score === bestScore && Math.abs(s) < Math.abs(best))) { best = s; bestScore = score; }
+  // Ước lượng tông bằng profile chroma (Krumhansl-Kessler), thay vì đếm phím trắng.
+  // Trả về tông đích C trưởng hoặc A thứ; đây vẫn là ước lượng, không thay thế việc nghe/kiểm tra.
+  const KEY_MAJOR = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+  const KEY_MINOR = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+  function estimateKey(pitches) {
+    if (!pitches || pitches.length < 5) return { tonic: 0, mode: 'major', confidence: 0 };
+    const hist = new Array(12).fill(0);
+    pitches.forEach((p) => { hist[mod12(p)]++; });
+    const avg = hist.reduce((a,b) => a+b, 0) / 12;
+    const centered = hist.map((v) => v - avg);
+    const norm = Math.sqrt(centered.reduce((a,v) => a + v*v, 0)) || 1;
+    let best = { score: -Infinity, tonic: 0, mode: 'major' };
+    for (let tonic = 0; tonic < 12; tonic++) {
+      for (const [mode, profile] of [['major', KEY_MAJOR], ['minor', KEY_MINOR]]) {
+        const pc = profile.map((v) => v - profile.reduce((a,b)=>a+b,0)/12);
+        const pn = Math.sqrt(pc.reduce((a,v)=>a+v*v,0)) || 1;
+        let score = 0;
+        for (let i=0; i<12; i++) score += centered[i] * pc[mod12(i-tonic)];
+        score /= norm * pn;
+        if (score > best.score) best = { score, tonic, mode };
+      }
     }
-    return best;
+    return { ...best, confidence: best.score };
+  }
+  function signedSemitones(n) { n = mod12(n); return n > 6 ? n - 12 : n; }
+  function bestTranspose(pitches) {
+    const key = estimateKey(pitches);
+    if (!pitches || pitches.length < 5) return 0;
+    const target = key.mode === 'minor' ? 9 : 0; // A minor / C major
+    return signedSemitones(target - key.tonic);
   }
 
   // Tìm số quãng tám cần dời để nhiều nốt nằm trong dải đàn nhất (ưu tiên dời ít).
@@ -337,29 +397,43 @@
     return best.k * 12;
   }
 
-  const snapWhite = (p) => (WHITE[mod12(p)] ? p : p - 1); // phím đen -> phím trắng ngay bên dưới
+  // Chỉ làm tròn cao độ khi người dùng chủ động bật; undefined cũng phải giữ nguyên.
+  const snapWhite = (p) => (WHITE[mod12(p)] ? p : p - 1);
   function foldIntoRange(p, min, max) { while (p < min) p += 12; while (p > max) p -= 12; return p; }
 
   function makeMapper(pitches, opts) {
     const instr = INSTRUMENTS[opts.instrument] || INSTRUMENTS.kalimba17;
     const shift = (opts.transpose === 'auto' || opts.transpose === undefined) ? bestTranspose(pitches) : Number(opts.transpose);
     const octave = fitOctave(pitches.map((p) => p + shift), instr.min, instr.max);
-    const m = { shift, octave, folded: 0, instr };
+    const key = estimateKey(pitches);
+    const targetTonicPc = mod12(key.tonic + shift);
+    const targetKey = NOTE_NAMES[targetTonicPc] + (key.mode === 'minor' ? ' minor' : ' major');
+    const m = { shift, octave, folded: 0, instr, sourceTonic: NOTE_NAMES[key.tonic], sourceMode: key.mode, targetTonic: NOTE_NAMES[targetTonicPc], targetMode: key.mode, targetKey, keyConfidence: key.confidence };
     m.map = (p) => {
       let q = p + shift + octave;
-      if (opts.snap !== false) q = snapWhite(q);
-      if (q < instr.min || q > instr.max) { m.folded++; q = foldIntoRange(q, instr.min, instr.max); }
+      if (opts.snap === true) q = snapWhite(q);
+      // Không dời riêng lẻ từng nốt để ép vào dải đàn: cách đó làm sai giai điệu.
+      if (q < instr.min || q > instr.max) m.folded++;
       return q;
     };
     return m;
   }
 
   function transposeChordName(name, shift) {
-    return name.replace(/([A-G])([#b♯♭]?)/g, (m, L, a) => {
-      let pc = LETTER_PC[L];
-      if (a === '#' || a === '♯') pc++; else if (a) pc--;
-      return NOTE_NAMES[mod12(pc + shift)];
-    });
+    const m = String(name || '').trim().match(/^([A-Ga-g])([#b♯♭]?)(.*)$/);
+    if (!m) return String(name || '');
+    let pc = LETTER_PC[m[1].toUpperCase()];
+    if (m[2] === '#' || m[2] === '♯') pc++;
+    else if (m[2] === 'b' || m[2] === '♭') pc--;
+    let out = NOTE_NAMES[mod12(pc + shift)] + m[3];
+    const slash = m[3].match(/^(.*)\/([A-Ga-g])([#b♯♭]?)$/);
+    if (slash) {
+      let bassPc = LETTER_PC[slash[2].toUpperCase()];
+      if (slash[3] === '#' || slash[3] === '♯') bassPc++;
+      else if (slash[3] === 'b' || slash[3] === '♭') bassPc--;
+      out = NOTE_NAMES[mod12(pc + shift)] + slash[1] + '/' + NOTE_NAMES[mod12(bassPc + shift)];
+    }
+    return out;
   }
 
   /* ---------- 2. HIỂN THỊ NỐT: CHỮ <-> SỐ ---------- */
@@ -420,15 +494,15 @@
     return out;
   }
 
-  // Làm tròn về lưới 1/2 phách (móc đơn), cắt phần nốt chồng lên nhau.
+  // Giữ lưới 1/4 phách (móc kép) để bớt mất nhịp nhanh; không tạo trường độ âm.
   function quantize(melody, grid) {
-    grid = grid || 0.5;
+    grid = grid || 0.25;
     const out = [];
     melody.forEach((n) => {
-      const start = Math.round(n.start / grid) * grid;
+      const start = Math.max(0, Math.round(n.start / grid) * grid);
       const dur = Math.max(grid, Math.round(n.dur / grid) * grid);
       const last = out[out.length - 1];
-      if (last && last.start === start) {
+      if (last && Math.abs(last.start - start) < 1e-8) {
         if (n.midi > last.midi) { last.midi = n.midi; last.dur = dur; }
         return;
       }
@@ -436,7 +510,7 @@
     });
     for (let i = 0; i < out.length - 1; i++) {
       const max = out[i + 1].start - out[i].start;
-      if (out[i].dur > max) out[i].dur = max;
+      if (out[i].dur > max) out[i].dur = Math.max(grid, max);
     }
     return out;
   }
@@ -529,7 +603,7 @@
     const raw = all.filter((n) => n.track === melodyTrack);
     if (!raw.length) return emptySong('Không tìm thấy nốt nhạc nào trong file này.');
 
-    const melody = quantize(skyline(raw), 0.5);
+    const melody = quantize(skyline(raw), 0.25);
     if (!melody.length) return emptySong('Không tìm thấy giai điệu rõ ràng. Thử chọn track khác.');
     const mapper = makeMapper(melody.map((n) => n.midi), opts);
     const chordMap = detectChordsByBar(all, bpb, mapper.shift);
@@ -548,7 +622,7 @@
 
     return finalize({
       lines: layout(events, bpb, opts),
-      info: { shift: mapper.shift, tonic: NOTE_NAMES[mod12(-mapper.shift)], octave: mapper.octave / 12, folded: mapper.folded, track: melodyTrack, instrument: opts.instrument },
+      info: { shift: mapper.shift, tonic: mapper.sourceTonic, mode: mapper.sourceMode, targetKey: mapper.targetKey, keyConfidence: mapper.keyConfidence, octave: mapper.octave / 12, folded: mapper.folded, track: melodyTrack, instrument: opts.instrument },
     });
   }
 
@@ -635,11 +709,138 @@
     }));
     return finalize({
       lines,
-      info: { shift: mapper.shift, tonic: NOTE_NAMES[mod12(-mapper.shift)], octave: mapper.octave / 12, folded: mapper.folded, instrument: opts.instrument },
+      info: { shift: mapper.shift, tonic: mapper.sourceTonic, mode: mapper.sourceMode, targetKey: mapper.targetKey, keyConfidence: mapper.keyConfidence, octave: mapper.octave / 12, folded: mapper.folded, instrument: opts.instrument },
     });
   }
 
-  /* ---------- 5. XUẤT KẾT QUẢ ---------- */
+  /* ---------- 5. HỢP ÂM CHORDPRO -> NỐT RẢI ---------- */
+
+  function parseChordSymbol(value) {
+    const raw = String(value || '').trim().replace(/♯/g, '#').replace(/[♭]/g, 'b');
+    const match = raw.match(/^([A-Ga-g])([#b]?)(.*)$/);
+    if (!match) return null;
+    const letter = match[1].toUpperCase();
+    const accidental = match[2];
+    let root = LETTER_PC[letter] + (accidental === '#' ? 1 : accidental === 'b' ? -1 : 0);
+    root = mod12(root);
+    let rawQuality = match[3].replace(/\/([A-Ga-g])([#b]?)(?:$)/, '').replace(/\s+/g, '');
+    let quality = rawQuality.toLowerCase();
+    let intervals;
+    // M7/M9 thường được viết hoa chữ M để phân biệt với m7/m9.
+    if (/^M(?:7|9|13)$/.test(rawQuality)) intervals = rawQuality === 'M7' ? [0, 4, 7, 11] : rawQuality === 'M9' ? [0, 4, 7, 11, 14] : [0, 4, 7, 11, 14, 21];
+    else if (/^(m7b5|ø7|ø)$/.test(quality)) intervals = [0, 3, 6, 10];
+    else if (/^(dim7|°7)$/.test(quality)) intervals = [0, 3, 6, 9];
+    else if (/^(dim|°)$/.test(quality)) intervals = [0, 3, 6];
+    else if (/^(aug|\+)$/.test(quality)) intervals = [0, 4, 8];
+    else if (/^(mmaj7|mm7|m\(maj7\))$/.test(quality)) intervals = [0, 3, 7, 11];
+    else if (/^(maj13|major13)$/.test(quality)) intervals = [0, 4, 7, 11, 14, 21];
+    else if (/^(maj9|major9)$/.test(quality)) intervals = [0, 4, 7, 11, 14];
+    else if (/^(m9|min9|-9)$/.test(quality)) intervals = [0, 3, 7, 10, 14];
+    else if (/^(9)$/.test(quality)) intervals = [0, 4, 7, 10, 14];
+    else if (/^(maj7|major7|△7)$/.test(quality)) intervals = [0, 4, 7, 11];
+    else if (/^(m7|min7|-7)$/.test(quality)) intervals = [0, 3, 7, 10];
+    else if (/^(7)$/.test(quality)) intervals = [0, 4, 7, 10];
+    else if (/^(m6|min6)$/.test(quality)) intervals = [0, 3, 7, 9];
+    else if (/^(6)$/.test(quality)) intervals = [0, 4, 7, 9];
+    else if (/^(sus2)$/.test(quality)) intervals = [0, 2, 7];
+    else if (/^(sus4|sus)$/.test(quality)) intervals = [0, 5, 7];
+    else if (/^(add9|add2)$/.test(quality)) intervals = [0, 4, 7, 14];
+    else if (/^(m|min|-)$/.test(quality)) intervals = [0, 3, 7];
+    else if (/^(5)$/.test(quality)) intervals = [0, 7];
+    else if (/^(maj|major)?$/.test(quality)) intervals = [0, 4, 7];
+    else return null;
+
+    const slash = raw.match(/\/([A-Ga-g])([#b]?)(?:$)/);
+    let bassPc = null;
+    if (slash) bassPc = mod12(LETTER_PC[slash[1].toUpperCase()] + (slash[2] === '#' ? 1 : slash[2] === 'b' ? -1 : 0));
+    return { name: raw, root, intervals: Array.from(new Set(intervals)).sort((a, b) => a - b), bassPc };
+  }
+
+  function chordVoicing(chord, instrument) {
+    const parsed = typeof chord === 'string' ? parseChordSymbol(chord) : chord;
+    if (!parsed) return null;
+    const instr = INSTRUMENTS[instrument] || INSTRUMENTS.kalimba17;
+    const intervals = parsed.intervals;
+    const center = (instr.min + instr.max) / 2;
+    const candidates = [];
+    for (let rootMidi = instr.min; rootMidi <= instr.max; rootMidi++) {
+      if (mod12(rootMidi) !== parsed.root) continue;
+      const seq = intervals.map((it) => rootMidi + it);
+      if (seq.some((m) => m < instr.min || m > instr.max)) continue;
+      candidates.push({ rootMidi, seq, score: Math.abs(rootMidi - center) });
+    }
+    let best = candidates.sort((a, b) => a.score - b.score)[0];
+    if (!best) {
+      let rootMidi = instr.min + mod12(parsed.root - instr.min);
+      if (rootMidi < instr.min) rootMidi += 12;
+      const seq = intervals.map((it) => rootMidi + it).filter((m) => m <= instr.max && m >= instr.min);
+      if (!seq.length) return null;
+      best = { rootMidi, seq };
+    }
+    let seq = best.seq.slice();
+    if (parsed.bassPc !== null && parsed.bassPc !== parsed.root) {
+      let bass = seq.find((m) => mod12(m) === parsed.bassPc);
+      if (bass === undefined) {
+        const cands = [];
+        for (let m = instr.min; m <= instr.max; m++) if (mod12(m) === parsed.bassPc) cands.push(m);
+        bass = cands.sort((a,b) => Math.abs(a-center)-Math.abs(b-center))[0];
+      }
+      // Thử đặt nốt bass thấp hơn một quãng tám, tránh biến slash chord thành giai điệu lộn xộn.
+      if (bass !== undefined && bass - 12 >= instr.min) bass -= 12;
+      if (bass !== undefined) seq = [bass, ...seq.filter((m) => mod12(m) !== parsed.bassPc).sort((a,b) => a-b)];
+    }
+    return { parsed, pitches: seq, chordName: parsed.name };
+  }
+
+  // Dán lời kiểu [Dm7]Cho anh ... [G]được không: mỗi hợp âm thành một arpeggio.
+  // Không tự bịa giai điệu hát hay căn chính xác thời gian theo âm tiết.
+  function convertChordLyrics(text, opts) {
+    opts = opts || {};
+    const instr = INSTRUMENTS[opts.instrument] || INSTRUMENTS.kalimba17;
+    const srcLines = String(text || '').replace(/\r/g, '').split('\n').filter((line) => line.trim());
+    const rows = [];
+    const allPitches = [];
+    srcLines.forEach((row) => {
+      const groups = [];
+      row.replace(/\[([^\]]+)\]/g, (full, name) => {
+        const chord = chordVoicing(name.trim(), opts.instrument);
+        if (chord) {
+          groups.push(chord);
+          chord.pitches.forEach((midi) => allPitches.push(midi));
+        }
+        return full;
+      });
+      rows.push({ groups, lyric: row.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim() });
+    });
+    if (!allPitches.length) return emptySong('Chưa tìm thấy hợp âm hợp lệ. Hãy dùng dạng [Dm7] lời [G] lời, ví dụ [C], [Am7], [Fmaj7], [G7].');
+
+    const mapper = makeMapper(allPitches, opts);
+    const down = opts.chordPattern === 'down';
+    const lines = [];
+    rows.forEach((row) => {
+      if (!row.groups.length) return;
+      const tokens = [];
+      row.groups.forEach((group, groupIndex) => {
+        if (groupIndex) tokens.push({ t: 'bar' });
+        const notes = (down ? group.pitches.slice().reverse() : group.pitches.slice());
+        const shownChord = transposeChordName(group.chordName, mapper.shift);
+        notes.forEach((midi, noteIndex) => {
+          tokens.push({
+            t: 'note', midi: mapper.map(midi), beats: 1, dashes: 0,
+            chord: noteIndex === 0 ? shownChord : null,
+          });
+        });
+      });
+      tokens.lyric = row.lyric;
+      lines.push(tokens);
+    });
+    return finalize({
+      lines,
+      info: { shift: mapper.shift, tonic: mapper.sourceTonic, mode: mapper.sourceMode, targetTonic: mapper.targetTonic, targetMode: mapper.targetMode, targetKey: mapper.targetKey, keyConfidence: mapper.keyConfidence, octave: mapper.octave / 12, folded: mapper.folded, instrument: opts.instrument, chordMode: true },
+    });
+  }
+
+  /* ---------- 6. XUẤT KẾT QUẢ ---------- */
 
   // Văn bản thuần (dùng cho nút Copy). Có thể dán ngược lại vào ô "Dán văn bản".
   function toPlainText(song, o) {
@@ -655,7 +856,7 @@
           if (o.showDashes) for (let d = 0; d < tk.dashes; d++) parts.push('-');
         }
       });
-      return parts.join(' ') + (line.lyric ? '\n' + line.lyric : '');
+      return parts.join(' ') + (o.includeLyrics !== false && line.lyric ? '\n' + line.lyric : '');
     }).join('\n');
   }
 
@@ -700,9 +901,9 @@
   }
 
   const api = {
-    INSTRUMENTS, CHORDS, midiName, bestTranspose, fitOctave, snapWhite, foldIntoRange, makeMapper,
+    INSTRUMENTS, CHORDS, midiName, estimateKey, bestTranspose, fitOctave, snapWhite, foldIntoRange, makeMapper,
     transposeChordName, noteLabel, describeTracks, pickMelodyTrack, skyline, quantize,
-    detectChordsByBar, convertMidi, parseText, convertText, toPlainText, playbackEvents, applyLyrics,
+    detectChordsByBar, convertMidi, parseText, convertText, parseChordSymbol, chordVoicing, convertChordLyrics, toPlainText, playbackEvents, applyLyrics,
   };
   root.Converter = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -731,6 +932,7 @@
     source: null,      // { kind:'midi', data, name } hoặc { kind:'text', text, name }
     song: null,
     playing: false,
+    slowTempoOriginal: null,
     ocrPending: false, // văn bản trong ô "Dán nốt" vừa đến từ OCR
   };
 
@@ -809,8 +1011,12 @@
     const src = state.source;
     if (!src) return false;
     const o = getOpts();
-    state.song = src.kind === 'text' ? C.convertText(src.text, o) : C.convertMidi(src.data, o);
-    C.applyLyrics(state.song, $('#lyricsInput').value);
+    if (src.kind === 'chords') {
+      state.song = C.convertChordLyrics(src.text, o);
+    } else {
+      state.song = src.kind === 'text' ? C.convertText(src.text, o) : C.convertMidi(src.data, o);
+      C.applyLyrics(state.song, $('#lyricsInput').value);
+    }
     renderAll();
     return state.song.info.noteCount > 0;
   }
@@ -827,9 +1033,16 @@
     if (s.info.error) { el.textContent = s.info.error; return; }
     const i = s.info, instr = C.INSTRUMENTS[getOpts().instrument];
     const parts = [i.noteCount + ' nốt'];
-    parts.push(i.shift ? 'Đã dịch tông ' + (i.shift > 0 ? '+' : '') + i.shift + ' nửa cung (tông gốc khoảng ' + i.tonic + ' về C)' : 'Giữ nguyên tông C');
-    if (i.octave) parts.push('dời ' + (i.octave > 0 ? '+' : '') + i.octave + ' quãng tám cho vừa đàn');
-    if (i.folded) parts.push(i.folded + ' nốt vượt dải đàn đã được đưa về trong dải');
+    const hasKeyEstimate = Number.isFinite(i.keyConfidence) && i.keyConfidence > 0;
+    const srcKey = i.tonic + (i.mode === 'minor' ? ' thứ' : ' trưởng');
+    if (i.shift) parts.push('Dịch ' + (i.shift > 0 ? '+' : '') + i.shift + ' nửa cung' + (hasKeyEstimate ? '; tông ước lượng ' + srcKey + ' → ' + (i.targetKey || 'chưa xác định') : '; chưa đủ dữ liệu để ước lượng tông'));
+    else parts.push('Giữ nguyên cao độ' + (hasKeyEstimate ? '; tông ước lượng: ' + srcKey : '; chưa đủ dữ liệu để ước lượng tông'));
+    if (i.octave) parts.push('dời toàn bộ nốt ' + (i.octave > 0 ? '+' : '') + i.octave + ' quãng tám');
+    if (i.folded) parts.push(i.folded + ' nốt ngoài dải đàn vẫn được giữ cao độ; hãy đổi quãng tám/tông hoặc nhạc cụ');
+    if (getOpts().instrument === 'kalimba17') {
+      const chromatic = s.lines.flat().filter((t) => t.t === 'note' && ![0,2,4,5,7,9,11].includes(((t.midi % 12) + 12) % 12)).length;
+      if (chromatic) parts.push(chromatic + ' nốt thăng/giáng không có trên Kalimba 17 phím C; cần đổi tông, sửa nốt hoặc dùng đàn phù hợp');
+    }
     parts.push('dải đàn ' + C.midiName(instr.min) + ' đến ' + C.midiName(instr.max));
     el.textContent = parts.join('. ') + '.';
   }
@@ -916,12 +1129,12 @@
     let midi;
     try { midi = new MidiCls(buf); }
     catch (e) { throw new Error('File này không phải MIDI hợp lệ.'); }
-    state.source = { kind: 'midi', data: adaptMidi(midi), name };
+    state.source = { kind: 'midi', data: adaptMidi(midi), name, buffer: buf.slice(0) };
     $('#titleInput').value = name;
     $('#printTitle').textContent = name;
     fillTracks(state.source.data.tracks);
     const ok = convert();
-    if (ok && share) shareSong({ title: name, source: sourceKind, midiBuffer: buf });
+    // Không tự tải lên lúc mở file. Chỉ chia sẻ khi người dùng bấm nút riêng.
     return ok;
   }
 
@@ -953,6 +1166,9 @@
   $('#btnYt').addEventListener('click', () => run($('#btnYt'), async () => {
     const url = $('#ytUrl').value.trim();
     if (!url) throw new Error('Hãy dán link YouTube trước.');
+    let parsedUrl; try { parsedUrl = new URL(url); } catch (e) { throw new Error('Link không hợp lệ.'); }
+    if (parsedUrl.protocol !== 'https:') throw new Error('Hãy dùng link YouTube bắt đầu bằng https://.');
+    if (!['youtube.com','www.youtube.com','m.youtube.com','youtu.be','www.youtu.be'].includes(parsedUrl.hostname.toLowerCase())) throw new Error('Chỉ chấp nhận liên kết YouTube hợp lệ.');
     setStatus('Đang tải âm thanh và phân tích, mất vài phút với bài dài…', 'busy');
     const res = await apiFetch('/api/youtube-to-midi', {
       method: 'POST',
@@ -985,7 +1201,7 @@
     } finally { await worker.terminate(); }
     state.ocrPending = true;
     switchTab('text');
-    setStatus('Đã quét xong. Hãy đối chiếu với ảnh gốc, sửa chỗ nhầm rồi bấm “Chuyển đổi”. Dấu chấm trên/dưới số sẽ không được nhận ra.', 'ok');
+    setStatus('Đã quét ký tự xong (chưa nhận diện khuông nhạc). Đối chiếu ảnh gốc, sửa chỗ nhầm rồi bấm “Chuyển đổi”.', 'ok');
   }));
 
   /* ---------- Nguồn 5: dán văn bản ---------- */
@@ -998,9 +1214,7 @@
     $('#printTitle').textContent = title;
     $('#trackWrap').classList.add('hidden');
     const ok = convert();
-    if (ok && share) {
-      shareSong({ title, source: state.ocrPending ? 'ocr' : 'text', text });
-    }
+    // Chia sẻ được thực hiện riêng bằng nút và xác nhận của người dùng.
     state.ocrPending = false;
     return ok;
   }
@@ -1020,7 +1234,7 @@
 
   /* ---------- Cài đặt: đổi là cập nhật ngay ---------- */
 
-  ['instrument', 'transpose', 'trackSel', 'barsPerLine', 'optSnap'].forEach((id) => $('#' + id).addEventListener('change', () => { stopPlay(); convert(); }));
+  ['instrument', 'transpose', 'trackSel', 'barsPerLine', 'optSnap', 'chordPattern'].forEach((id) => $('#' + id).addEventListener('change', () => { stopPlay(); convert(); }));
   ['style', 'marks', 'optChords', 'optDash'].forEach((id) => $('#' + id).addEventListener('change', renderSheet));
   $('#titleInput').addEventListener('input', (e) => { $('#printTitle').textContent = e.target.value; });
 
@@ -1042,6 +1256,54 @@
       document.execCommand('copy'); ta.remove();
     }
     setStatus('Đã chép vào bộ nhớ tạm. Bạn có thể dán vào Zalo, Messenger, Ghi chú…', 'ok');
+  });
+
+  /* ---------- Chỉnh sửa dãy nốt sau chuyển đổi ---------- */
+
+  $('#btnEdit').addEventListener('click', () => {
+    if (!requireSong()) return;
+    $('#notationEditor').value = C.toPlainText(state.song, { ...getOpts(), includeLyrics: false, showChords: true, showDashes: true });
+    $('#editPanel').classList.remove('hidden');
+    $('#notationEditor').focus();
+  });
+
+  $('#btnCancelEdits').addEventListener('click', () => $('#editPanel').classList.add('hidden'));
+
+  $('#btnApplyEdits').addEventListener('click', () => run($('#btnApplyEdits'), async () => {
+    const text = $('#notationEditor').value.trim();
+    if (!text) throw new Error('Dãy nốt đang trống.');
+    stopPlay();
+    $('#transpose').value = '0';
+    $('#optSnap').checked = false;
+    $('#textInput').value = text;
+    state.source = { kind: 'text', text, name: $('#titleInput').value.trim() || 'Bản nhạc đã chỉnh sửa' };
+    const ok = convert();
+    if (!ok) throw new Error(state.song && state.song.info.error ? state.song.info.error : 'Không đọc được dãy nốt sau chỉnh sửa.');
+    $('#editPanel').classList.add('hidden');
+    setStatus('Đã áp dụng dãy nốt đã sửa. Hãy nghe lại trước khi xuất file.', 'ok');
+  }));
+
+  $('#btnSlow').addEventListener('click', () => {
+    stopPlay();
+    const bpm = Math.min(220, Math.max(40, Number($('#bpm').value) || 90));
+    if (state.slowTempoOriginal === null) {
+      state.slowTempoOriginal = bpm;
+      $('#bpm').value = String(Math.max(40, Math.round(bpm / 2)));
+      $('#btnSlow').textContent = 'Khôi phục BPM';
+      setStatus('Đã giảm tốc độ còn khoảng một nửa. Bấm “Khôi phục BPM” để trở lại tốc độ trước.', 'ok');
+    } else {
+      $('#bpm').value = String(state.slowTempoOriginal);
+      state.slowTempoOriginal = null;
+      $('#btnSlow').textContent = 'Phát chậm 0.5×';
+      setStatus('Đã khôi phục BPM ban đầu.', 'ok');
+    }
+  });
+
+  $('#bpm').addEventListener('input', () => {
+    if (state.slowTempoOriginal !== null) {
+      state.slowTempoOriginal = null;
+      $('#btnSlow').textContent = 'Phát chậm 0.5×';
+    }
   });
 
   /* ---------- Phát âm thanh (Tone.js) ---------- */
@@ -1080,7 +1342,12 @@
   function stopPlay() {
     if (!state.playing) return;
     state.playing = false;
-    if (window.Tone) { Tone.Transport.stop(); Tone.Transport.cancel(0); }
+    if (window.Tone) {
+      Tone.Transport.stop(); Tone.Transport.cancel(0);
+      Tone.Transport.loop = false;
+      Tone.Transport.loopStart = 0;
+      Tone.Transport.loopEnd = 0;
+    }
     if (synth) { synth.dispose(); synth = null; }
     $$('#sheet .note.playing').forEach((n) => n.classList.remove('playing'));
     $('#btnPlay').textContent = 'Phát âm thanh';
@@ -1095,6 +1362,9 @@
     makeSynth(C.INSTRUMENTS[o.instrument].synth);
     const { events, total } = C.playbackEvents(state.song, o.bpm);
     Tone.Transport.stop(); Tone.Transport.cancel(0); Tone.Transport.position = 0;
+    Tone.Transport.loop = $('#optLoop').checked;
+    Tone.Transport.loopStart = 0;
+    Tone.Transport.loopEnd = Math.max(0.1, total);
     events.forEach((e) => {
       Tone.Transport.schedule((time) => {
         synth.triggerAttackRelease(Tone.Frequency(e.midi, 'midi').toFrequency(), e.dur, time);
@@ -1166,6 +1436,7 @@
         const path = hash + '.mid';
         const up = await sb.storage.from('midi-files').upload(path, new Blob([midiBuffer], { type: 'audio/midi' }), { contentType: 'audio/midi', upsert: false });
         if (!up.error || /exist|duplicate/i.test(up.error.message || '')) midiPath = path;
+        else throw new Error('Không tải được MIDI lên kho: ' + up.error.message);
       }
       const row = {
         title: String(title).slice(0, 120),
@@ -1176,16 +1447,34 @@
         file_hash: hash,
       };
       const ins = await sb.from('songs').insert(row);
-      if (ins.error && ins.error.code !== '23505') console.warn('Không chia sẻ được:', ins.error.message); // 23505 = đã có bản trùng
-    } catch (e) { console.warn('Không chia sẻ được:', e); }                                                  // lỗi chia sẻ không được làm hỏng việc chính
+      if (ins.error) {
+        if (ins.error.code === '23505') throw new Error('Bản nhạc này đã có trong kho cộng đồng.');
+        throw new Error('Không lưu được bản nhạc vào kho: ' + ins.error.message);
+      }
+    } catch (e) {
+      // Lỗi chia sẻ chỉ được hiển thị khi người dùng chủ động bấm nút chia sẻ.
+      throw e;
+    }
   }
+
+  $('#btnShare').addEventListener('click', () => run($('#btnShare'), async () => {
+    if (!requireSong()) return;
+    if (!$('#optShare').checked) throw new Error('Hãy tích ô đồng ý chia sẻ trước khi gửi bản nhạc.');
+    if (!sb) throw new Error('Kho cộng đồng chưa được cấu hình. Hãy cài SUPABASE_URL, SUPABASE_ANON_KEY và bảng lưu trữ trước khi chia sẻ.');
+    const src = state.source || {};
+    const title = $('#titleInput').value.trim() || 'Bản nhạc';
+    const source = src.kind === 'midi' ? 'midi' : src.kind === 'chords' ? 'chords' : state.ocrPending ? 'ocr' : 'text';
+    if (src.kind === 'midi' && src.buffer) await shareSong({ title, source, midiBuffer: src.buffer });
+    else await shareSong({ title, source, text: plainText() });
+    setStatus('Đã gửi yêu cầu chia sẻ nếu cấu hình Supabase và quyền bảng cho phép. Bài có thể cần được duyệt trước khi hiện công khai.', 'ok');
+  }));
 
   async function loadCommunity() {
     const q = $('#searchBox').value.trim();
     const ul = $('#communityList');
     ul.textContent = '';
     const msg = (t) => { const li = document.createElement('li'); li.className = 'py-3 text-ink/65'; li.textContent = t; ul.append(li); };
-    if (!sb) { msg('Chưa cấu hình Supabase (xem README, mục 5). Kho cộng đồng sẽ hiện ở đây.'); return; }
+    if (!sb) { msg('Kho cộng đồng chưa được bật. Hãy cấu hình Supabase nếu muốn sử dụng; bản nhạc vẫn chuyển đổi và xuất file bình thường.'); return; }
     let query = sb.from('songs')
       .select('id,title,source,instrument,notation_text,midi_path')
       .eq('approved', true);
@@ -1210,8 +1499,9 @@
   async function openCommunitySong(s) {
     setStatus('Đang mở “' + s.title + '”…', 'busy');
     if (s.midi_path) {
-      const url = sb.storage.from('midi-files').getPublicUrl(s.midi_path).data.publicUrl;
-      const res = await fetch(url);
+      const signed = await sb.storage.from('midi-files').createSignedUrl(s.midi_path, 60);
+      if (signed.error || !signed.data || !signed.data.signedUrl) throw new Error('Không tạo được link tải MIDI. Bài có thể chưa được duyệt hoặc quyền kho lưu trữ chưa đúng.');
+      const res = await fetch(signed.data.signedUrl);
       if (!res.ok) throw new Error('Không tải được file MIDI của bài này.');
       loadMidi(await res.arrayBuffer(), s.title, 'midi', false);
     } else {
@@ -1225,7 +1515,23 @@
   $('#btnRefresh').addEventListener('click', () => loadCommunity());
   let searchTimer = null;
   $('#searchBox').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadCommunity, 350); });
-  $('#lyricsInput').addEventListener('input', () => { if (state.source) convert(); });
+  $('#lyricsInput').addEventListener('input', () => {
+    if (!state.source) return;
+    if (state.source.kind === 'chords') state.source.text = $('#lyricsInput').value;
+    convert();
+  });
+
+  $('#btnChordNotes').addEventListener('click', () => run($('#btnChordNotes'), async () => {
+    const text = $('#lyricsInput').value.trim();
+    if (!text || !/\[[^\]]+\]/.test(text)) throw new Error('Hãy dán lời kèm hợp âm trong ngoặc vuông, ví dụ [Dm7]Cho anh… [G]được không.');
+    stopPlay();
+    state.source = { kind: 'chords', text, name: $('#titleInput').value.trim() || 'Nốt rải hợp âm' };
+    if (!$('#titleInput').value.trim() || $('#titleInput').value.trim() === 'Ví dụ: Lấp lánh ngôi sao') $('#titleInput').value = 'Nốt rải hợp âm';
+    $('#printTitle').textContent = $('#titleInput').value;
+    const ok = convert();
+    if (!ok) throw new Error(state.song && state.song.info.error ? state.song.info.error : 'Không chuyển được hợp âm.');
+    setStatus('Đã tách hợp âm thành nốt rải. Mỗi nốt hiện tại dài 1 phách; đây không phải giai điệu hát hoặc bản đệm có thời gian chính xác.', 'ok');
+  }));
 
   /* ---------- Khởi động ---------- */
 
@@ -1249,7 +1555,7 @@
 
     const tr = $('#transpose');
     const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; tr.append(o); };
-    add('auto', 'Tự động về C (phím trắng)');
+    add('auto', 'Tự động về C trưởng / A thứ (ước lượng)');
     add('0', 'Giữ nguyên');
     for (let s = -6; s <= 6; s++) if (s) add(String(s), (s > 0 ? '+' : '') + s + ' nửa cung');
 
