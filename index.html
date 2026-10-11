@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ký âm một hàng — Kalimba, Organ, Piano</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind (bản CDN: không cần cài đặt gì) -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { mist: '#E9EFEE', paper: '#FBFCFA', ink: '#0E2A2B', pine: '#1F6F6B', pinedark: '#17524F', brass: '#B07D1E', brassdark: '#7A5410', rule: '#C9D6D3' },
+      } },
+    };
+  </script>
+
+  <style>
+    body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; }
+
+    /* Tờ nhạc */
+    .sheet-line { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .25rem .5rem; padding: .75rem 0; border-bottom: 1px solid #DDE6E3; }
+    .sheet-line:last-child { border-bottom: 0; }
+    .cell { display: flex; flex-direction: column; align-items: center; min-width: 1.9rem; }
+    .cell .chord { font-size: .8rem; font-weight: 600; color: #7A5410; min-height: 1.2rem; white-space: nowrap; }
+    .cell .note { font-family: 'Lexend', 'Be Vietnam Pro', sans-serif; font-size: 1.65rem; line-height: 1.6; padding: 0 .25rem; border-radius: .4rem; }
+    .cell.bar .note { color: #9FB2AE; font-weight: 300; }
+    .cell.dash .note, .cell.rest .note { color: #6F8884; }
+    .note.playing { background: #F1DDA9; box-shadow: 0 0 0 2px #B07D1E; }
+    .hide-chords .chord { display: none; }
+
+    .lyric { flex-basis: 100%; font-size: .95rem; color: #3D5755; padding: .1rem .25rem 0; }
+    .tab[aria-selected="true"] { background: #0E2A2B; color: #E9EFEE; }
+    .field { width: 100%; border: 1px solid #C9D6D3; border-radius: .5rem; background: #fff; padding: .45rem .6rem; font-size: .9rem; }
+    .field:focus-visible, .btn:focus-visible, .tab:focus-visible { outline: 3px solid #B07D1E; outline-offset: 2px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border-radius: .5rem; padding: .55rem .9rem; font-weight: 600; font-size: .9rem; border: 1px solid #1F6F6B; color: #17524F; background: #fff; }
+    .btn:hover { background: #E3EFED; }
+    .btn:disabled { opacity: .5; cursor: wait; }
+    .btn-primary { background: #1F6F6B; color: #fff; }
+    .btn-primary:hover { background: #17524F; }
+
+    /* IN / XUẤT PDF: chỉ in tờ nhạc, khổ A4 */
+    @page { size: A4; margin: 14mm; }
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      #printArea { border: 0 !important; padding: 0 !important; box-shadow: none !important; background: #fff !important; }
+      .cell .note { font-size: 20pt; }
+      .sheet-line { break-inside: avoid; }
+      #info { color: #555; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  </style>
+</head>
+
+<body class="bg-mist text-ink">
+
+  <header class="no-print bg-ink text-mist">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-end gap-x-8 gap-y-4 px-4 py-7">
+      <svg id="tines" width="170" height="64" viewBox="0 0 170 64" aria-hidden="true"></svg>
+      <div class="min-w-0 flex-1">
+        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Ký âm một hàng</h1>
+        <p class="mt-1 max-w-xl text-sm text-mist/75">Biến MIDI, MP3, video YouTube, ảnh sheet hoặc dãy nốt bạn gõ thành một hàng nốt dễ đánh cho Kalimba 17 phím, Organ và Piano.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[23rem_minmax(0,1fr)]">
+
+    <!-- CỘT TRÁI: NGUỒN + CÀI ĐẶT -->
+    <div class="no-print space-y-6">
+
+      <section class="rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-source">
+        <h2 id="h-source" class="mb-3 text-base font-semibold">Nguồn nhạc</h2>
+
+        <div role="tablist" aria-label="Chọn nguồn nhạc" class="mb-4 flex flex-wrap gap-1">
+          <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="midi" aria-selected="true">MIDI</button>
+          <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="mp3" aria-selected="false">MP3</button>
+          <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="youtube" aria-selected="false">YouTube</button>
+          <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="ocr" aria-selected="false">Ảnh sheet</button>
+          <button class="tab rounded-md px-3 py-1.5 text-sm font-medium" role="tab" data-tab="text" aria-selected="false">Dán nốt</button>
+        </div>
+
+        <div id="panel-midi" data-panel="midi" class="space-y-2">
+          <label class="block text-sm" for="midiFile">Chọn file .mid hoặc .midi</label>
+          <input id="midiFile" type="file" accept=".mid,.midi,audio/midi" class="field" />
+          <p class="text-xs text-ink/70">Đọc trực tiếp trên máy bạn, không cần máy chủ.</p>
+        </div>
+
+        <div id="panel-mp3" data-panel="mp3" class="hidden space-y-2">
+          <label class="block text-sm" for="mp3File">Chọn file MP3 (nên là bản đã tách giọng hát)</label>
+          <input id="mp3File" type="file" accept=".mp3,.wav,.m4a,.ogg,.flac,audio/*" class="field" />
+          <button id="btnMp3" class="btn btn-primary w-full" type="button">Phân tích bằng AI</button>
+          <p class="text-xs text-ink/70">Cần máy chủ Python riêng (điền API_BASE trong CONFIG). Bài càng ít nhạc cụ, kết quả càng sạch.</p>
+        </div>
+
+        <div id="panel-youtube" data-panel="youtube" class="hidden space-y-2">
+          <label class="block text-sm" for="ytUrl">Dán link YouTube</label>
+          <input id="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." class="field" />
+          <button id="btnYt" class="btn btn-primary w-full" type="button">Lấy nhạc và phân tích</button>
+          <p class="text-xs text-ink/70">Chỉ dùng để tự tập đàn. Video tối đa 8 phút.</p>
+        </div>
+
+        <div id="panel-ocr" data-panel="ocr" class="hidden space-y-2">
+          <label class="block text-sm" for="ocrFile">Chụp hoặc chọn ảnh sheet / tab</label>
+          <input id="ocrFile" type="file" accept="image/*" class="field" />
+          <button id="btnOcr" class="btn btn-primary w-full" type="button">Quét chữ và số</button>
+          <p class="text-xs text-ink/70">Chạy ngay trên trình duyệt. Quét chữ hay nhầm lẫn, bạn sẽ được sửa lại trước khi chuyển đổi.</p>
+        </div>
+
+        <div id="panel-text" data-panel="text" class="hidden space-y-2">
+          <label class="block text-sm" for="textInput">Dán nốt dạng số (1 2 3) hoặc chữ (C D E)</label>
+          <textarea id="textInput" rows="6" class="field font-mono" spellcheck="false">[C] 1 1 5 5 | [F] 6 6 [C] 5 - | [F] 4 4 [C] 3 3 | [G] 2 2 [C] 1 -</textarea>
+          <button id="btnText" class="btn btn-primary w-full" type="button">Chuyển đổi</button>
+          <details class="text-xs text-ink/75">
+            <summary class="cursor-pointer font-medium">Cách viết nốt</summary>
+            <ul class="mt-1 list-disc space-y-0.5 pl-5">
+              <li>0 là nghỉ, dấu - là kéo dài, dấu | là vạch nhịp</li>
+              <li>[Am] đặt trước nốt để ghi hợp âm</li>
+              <li>Cao hơn một quãng tám: 1' hoặc 1*. Cao hơn nữa: 1'' hoặc 1**. Thấp hơn: 1_ (thấp nữa: 1__). Chấm trên/dưới số cũng đọc được</li>
+              <li>Thăng, giáng: C# hoặc Bb. Chữ kèm số: C5 là Đô ở quãng tám 5</li>
+            </ul>
+          </details>
+        </div>
+
+        <p id="status" role="status" aria-live="polite" class="mt-3 min-h-[1.25rem] text-sm"></p>
+      </section>
+
+      <section class="rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-settings">
+        <h2 id="h-settings" class="mb-3 text-base font-semibold">Cách đánh</h2>
+        <div class="space-y-3">
+          <div>
+            <label class="mb-1 block text-sm" for="instrument">Nhạc cụ</label>
+            <select id="instrument" class="field"></select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-sm" for="style">Hiển thị</label>
+              <select id="style" class="field">
+                <option value="jianpu">Số: 1 2 3</option>
+                <option value="letter">Chữ: C D E</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm" for="barsPerLine">Ô nhịp mỗi dòng</label>
+              <select id="barsPerLine" class="field">
+                <option>2</option><option>3</option><option selected>4</option><option>6</option><option>8</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm" for="marks">Đánh dấu nốt cao / thấp</label>
+            <select id="marks" class="field">
+              <option value="quote">Dấu nháy: 1' cao, 1'' cao hơn, 1_ thấp</option>
+              <option value="star">Dấu sao: 1* cao, 1** cao hơn, 1_ thấp</option>
+              <option value="dot">Chấm trên / chấm dưới số</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm" for="transpose">Tông</label>
+            <select id="transpose" class="field"></select>
+          </div>
+          <div id="trackWrap" class="hidden">
+            <label class="mb-1 block text-sm" for="trackSel">Track giai điệu (MIDI)</label>
+            <select id="trackSel" class="field"></select>
+          </div>
+          <fieldset class="space-y-1.5 pt-1 text-sm">
+            <legend class="sr-only">Tùy chọn</legend>
+            <label class="flex items-center gap-2"><input id="optChords" type="checkbox" checked /> Hiện hợp âm phía trên</label>
+            <label class="flex items-center gap-2"><input id="optDash" type="checkbox" checked /> Hiện dấu - cho nốt kéo dài</label>
+            <label class="flex items-center gap-2"><input id="optSnap" type="checkbox" checked /> Ép về phím trắng</label>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-lyrics">
+        <h2 id="h-lyrics" class="mb-1 text-base font-semibold">Lời bài hát và hợp âm (tùy chọn)</h2>
+        <p class="mb-2 text-xs text-ink/70">Mỗi dòng lời ứng với một dòng nốt, theo thứ tự. Gõ hợp âm trong ngoặc vuông ngay trước chữ. Hợp âm sẽ hiện phía trên dòng nốt, lời hiện bên dưới.</p>
+        <label class="sr-only" for="lyricsInput">Lời bài hát kèm hợp âm</label>
+        <textarea id="lyricsInput" rows="5" class="field" spellcheck="false" placeholder="[C]Lấp lánh [F]ngôi [C]sao&#10;[F]Trên trời [G]cao [C]kia"></textarea>
+      </section>
+    </div>
+
+    <!-- CỘT PHẢI: KẾT QUẢ -->
+    <div class="min-w-0 space-y-6">
+      <section class="rounded-xl border border-rule bg-paper p-4 sm:p-6" id="printArea" aria-labelledby="printTitle">
+        <h2 id="printTitle" class="text-2xl font-bold">Ví dụ: Lấp lánh ngôi sao</h2>
+        <p id="info" class="mt-1 min-h-[1.25rem] text-sm text-ink/70"></p>
+        <div id="sheet" class="mt-3" aria-live="polite"></div>
+      </section>
+
+      <section class="no-print rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-actions">
+        <h2 id="h-actions" class="mb-3 text-base font-semibold">Lưu và nghe thử</h2>
+        <div class="mb-3 grid gap-3 sm:grid-cols-[1fr_8rem]">
+          <div>
+            <label class="mb-1 block text-sm" for="titleInput">Tên bài hát</label>
+            <input id="titleInput" class="field" value="Ví dụ: Lấp lánh ngôi sao" maxlength="120" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm" for="bpm">Tốc độ (BPM)</label>
+            <input id="bpm" type="number" min="40" max="220" value="90" class="field" />
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnPlay" class="btn btn-primary" type="button">Phát âm thanh</button>
+          <button id="btnCopy" class="btn" type="button">Copy 1-Click</button>
+          <button id="btnDocx" class="btn" type="button">Tải file Word (.docx)</button>
+          <button id="btnPrint" class="btn" type="button">In / Tải PDF</button>
+        </div>
+        <label class="mt-4 flex items-start gap-2 text-sm">
+          <input id="optShare" type="checkbox" checked class="mt-1" />
+          <span>Chia sẻ bản nhạc này vào kho cộng đồng (ẩn danh). Bản chia sẻ chỉ hiện công khai sau khi quản trị viên duyệt. Bỏ chọn nếu bạn không muốn chia sẻ.</span>
+        </label>
+      </section>
+
+      <section class="no-print rounded-xl border border-rule bg-paper p-4" aria-labelledby="h-community">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h2 id="h-community" class="text-base font-semibold">Kho nhạc cộng đồng</h2>
+          <button id="btnRefresh" class="btn" type="button">Tải lại</button>
+        </div>
+        <label class="sr-only" for="searchBox">Tìm bài trong kho</label>
+        <input id="searchBox" type="search" class="field mb-2" placeholder="Tìm theo tên bài…" />
+        <ul id="communityList" class="divide-y divide-rule text-sm"></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="no-print mx-auto max-w-6xl px-4 pb-10 text-xs text-ink/65">
+    Công cụ hỗ trợ tập đàn. Hãy tôn trọng bản quyền: chỉ chuyển và chia sẻ nhạc bạn được phép sử dụng.
+  </footer>
+
+  <!-- Thư viện (tải từ CDN, đã ghim phiên bản) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+  <!-- ==================================================================
+       MỤC LỤC MÃ NGUỒN (tìm theo tiêu đề để nhảy tới)
+       1. CONFIG ............ địa chỉ backend và khóa Supabase (BẠN SỬA Ở ĐÂY)
+       2. BỘ XỬ LÝ LÕI ...... chọn giai điệu, dịch tông, chữ<->số, hợp âm, lời
+       3. GIAO DIỆN ......... đọc nguồn nhạc, hiển thị, phát nhạc, Word, in, kho cộng đồng
+       ================================================================== -->
+  <!-- 1. CONFIG -->
+  <script>
+    window.APP_CONFIG = {
+      // Địa chỉ backend Python (chỉ cần cho tab MP3 và YouTube). Để trống nếu chưa có.
+      // Ví dụ: 'http://localhost:8000' hoặc 'https://ten-app.onrender.com'
+      API_BASE: '',
+      // Kho cộng đồng (Supabase). Để trống nếu chưa dùng. Chỉ dán khóa "anon public", KHÔNG dán "service_role".
+      SUPABASE_URL: '',
+      SUPABASE_ANON_KEY: '',
+    };
+  </script>
+
+  <!-- 2. BỘ XỬ LÝ LÕI -->
+  <script>
+/*
+ * converter.js — BỘ XỬ LÝ LÕI
+ * Không phụ thuộc trình duyệt, nên có thể chạy thử bằng Node: node js/converter.test.js
+ *
+ * Luồng xử lý:
+ *   MIDI  -> chọn track giai điệu -> lọc nốt cao nhất (skyline) -> làm tròn nhịp
+ *         -> dịch tông về C -> ép vào dải đàn -> ngắt dòng theo ô nhịp -> "song"
+ *   Text  -> đọc chuỗi nốt (chữ/số) -> dịch tông -> ép vào dải đàn -> "song"
+ *
+ * "song" = { lines: [ [token, token, ...], ... ], info: {...} }
+ * token  = { t:'note', midi, beats, dashes, chord, id }
+ *        | { t:'rest', beats, hidden? }
+ *        | { t:'bar' }
+ */
+(function (root) {
+  'use strict';
+
+  const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const WHITE = { 0: 1, 2: 2, 4: 3, 5: 4, 7: 5, 9: 6, 11: 7 };      // pitch class -> bậc Jianpu
+  const LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const DEGREE_PC = [null, 0, 2, 4, 5, 7, 9, 11];                    // bậc Jianpu -> pitch class
+  const DOT_UP = '\u0307';    // dấu chấm TRÊN = quãng tám cao hơn
+  const DOT_DOWN = '\u0323';  // dấu chấm DƯỚI = quãng tám thấp hơn
+
+  // Dải nốt (số MIDI: C4 = 60). baseOctave = quãng tám được in "trơn" (không chấm).
+  // Muốn đổi dải đàn của bạn, chỉ cần sửa min / max ở đây.
+  const INSTRUMENTS = {
+    kalimba17: { label: 'Kalimba 17 phím (C4–E6)', min: 60, max: 88, baseOctave: 5, synth: 'kalimba' },
+    organ:     { label: 'Organ (C3–C6)',           min: 48, max: 84, baseOctave: 4, synth: 'organ' },
+    piano:     { label: 'Piano, tay phải (C4–C6)', min: 60, max: 84, baseOctave: 4, synth: 'piano' },
+  };
+
+  // Các hợp âm thuận tai của cung C trưởng (đều là phím trắng)
+  const CHORDS = [
+    { name: 'C',  pcs: [0, 4, 7] },
+    { name: 'Dm', pcs: [2, 5, 9] },
+    { name: 'Em', pcs: [4, 7, 11] },
+    { name: 'F',  pcs: [5, 9, 0] },
+    { name: 'G',  pcs: [7, 11, 2] },
+    { name: 'Am', pcs: [9, 0, 4] },
+  ];
+
+  const mod12 = (n) => ((n % 12) + 12) % 12;
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const midiName = (m) => NOTE_NAMES[mod12(m)] + (Math.floor(m / 12) - 1);
+
+  /* ---------- 1. DỊCH TÔNG ---------- */
+
+  // Thử 12 cách dịch, chọn cách nhiều nốt rơi vào phím trắng nhất.
+  // Hòa điểm -> chọn cách dịch ít nhất. (Âm giai thứ tự nhiên như La thứ cũng toàn phím trắng nên được giữ nguyên.)
+  function bestTranspose(pitches) {
+    let best = 0, bestScore = -1;
+    for (let s = -5; s <= 6; s++) {
+      let score = 0;
+      for (const p of pitches) if (WHITE[mod12(p + s)]) score++;
+      if (score > bestScore || (score === bestScore && Math.abs(s) < Math.abs(best))) { best = s; bestScore = score; }
+    }
+    return best;
+  }
+
+  // Tìm số quãng tám cần dời để nhiều nốt nằm trong dải đàn nhất (ưu tiên dời ít).
+  function fitOctave(pitches, min, max) {
+    if (!pitches.length) return 0;
+    const avg = mean(pitches), center = (min + max) / 2;
+    let best = null;
+    for (let a = 0; a <= 5; a++) {
+      for (const k of (a === 0 ? [0] : [-a, a])) {
+        const inRange = pitches.filter((p) => p + 12 * k >= min && p + 12 * k <= max).length;
+        const dist = Math.abs(avg + 12 * k - center);
+        if (!best || inRange > best.inRange || (inRange === best.inRange && a === best.a && dist < best.dist)) {
+          best = { k, a, inRange, dist };
+        }
+      }
+    }
+    return best.k * 12;
+  }
+
+  const snapWhite = (p) => (WHITE[mod12(p)] ? p : p - 1); // phím đen -> phím trắng ngay bên dưới
+  function foldIntoRange(p, min, max) { while (p < min) p += 12; while (p > max) p -= 12; return p; }
+
+  function makeMapper(pitches, opts) {
+    const instr = INSTRUMENTS[opts.instrument] || INSTRUMENTS.kalimba17;
+    const shift = (opts.transpose === 'auto' || opts.transpose === undefined) ? bestTranspose(pitches) : Number(opts.transpose);
+    const octave = fitOctave(pitches.map((p) => p + shift), instr.min, instr.max);
+    const m = { shift, octave, folded: 0, instr };
+    m.map = (p) => {
+      let q = p + shift + octave;
+      if (opts.snap !== false) q = snapWhite(q);
+      if (q < instr.min || q > instr.max) { m.folded++; q = foldIntoRange(q, instr.min, instr.max); }
+      return q;
+    };
+    return m;
+  }
+
+  function transposeChordName(name, shift) {
+    return name.replace(/([A-G])([#b♯♭]?)/g, (m, L, a) => {
+      let pc = LETTER_PC[L];
+      if (a === '#' || a === '♯') pc++; else if (a) pc--;
+      return NOTE_NAMES[mod12(pc + shift)];
+    });
+  }
+
+  /* ---------- 2. HIỂN THỊ NỐT: CHỮ <-> SỐ ---------- */
+
+  // marksStyle: 'quote' => 1' 1''  /  1_ 1__     'star' => 1* 1**  /  1_ 1__     'dot' => chấm trên / chấm dưới
+  const UP_MARK = { dot: DOT_UP, quote: "'", star: '*' };
+  const DOWN_MARK = { dot: DOT_DOWN, quote: '_', star: '_' };
+  function noteLabel(midi, style, instr, marksStyle) {
+    const ms = UP_MARK[marksStyle] ? marksStyle : 'quote';
+    const pc = mod12(midi);
+    const off = Math.floor(midi / 12) - 1 - instr.baseOctave;
+    const marks = off > 0 ? UP_MARK[ms].repeat(off) : DOWN_MARK[ms].repeat(-off);
+    if (style === 'letter') {
+      const n = NOTE_NAMES[pc];
+      return ms === 'dot' ? n[0] + marks + n.slice(1) : n + marks;
+    }
+    if (WHITE[pc]) return String(WHITE[pc]) + marks;
+    return '#' + WHITE[mod12(pc - 1)] + marks;
+  }
+
+  /* ---------- 3. ĐỌC MIDI -> GIAI ĐIỆU ---------- */
+
+  function describeTracks(tracks) {
+    return tracks.map((t, i) => ({
+      index: i,
+      name: t.name || '',
+      percussion: !!t.percussion,
+      count: t.notes.length,
+      avg: t.notes.length ? Math.round(mean(t.notes.map((n) => n.midi))) : 0,
+    }));
+  }
+
+  // Chọn track giai điệu: bỏ trống/trống đệm; bỏ track quá ít nốt; lấy track có cao độ trung bình cao nhất.
+  function pickMelodyTrack(tracks) {
+    const cands = describeTracks(tracks).filter((t) => !t.percussion && t.count > 0);
+    if (!cands.length) return -1;
+    const max = Math.max(...cands.map((c) => c.count));
+    const ok = cands.filter((c) => c.count >= max * 0.25);
+    ok.sort((a, b) => b.avg - a.avg);
+    return ok[0].index;
+  }
+
+  // Skyline: nhiều nốt đánh cùng lúc -> chỉ giữ nốt cao nhất (thường là giai điệu).
+  function skyline(notes, tol) {
+    tol = tol === undefined ? 0.12 : tol;
+    const sorted = notes.filter((n) => n.dur >= 0.12).sort((a, b) => a.start - b.start || b.midi - a.midi);
+    const out = [];
+    let i = 0;
+    while (i < sorted.length) {
+      let j = i, best = sorted[i];
+      while (j < sorted.length && sorted[j].start - sorted[i].start <= tol) {
+        if (sorted[j].midi > best.midi) best = sorted[j];
+        j++;
+      }
+      out.push({ midi: best.midi, start: best.start, dur: best.dur });
+      i = j;
+    }
+    return out;
+  }
+
+  // Làm tròn về lưới 1/2 phách (móc đơn), cắt phần nốt chồng lên nhau.
+  function quantize(melody, grid) {
+    grid = grid || 0.5;
+    const out = [];
+    melody.forEach((n) => {
+      const start = Math.round(n.start / grid) * grid;
+      const dur = Math.max(grid, Math.round(n.dur / grid) * grid);
+      const last = out[out.length - 1];
+      if (last && last.start === start) {
+        if (n.midi > last.midi) { last.midi = n.midi; last.dur = dur; }
+        return;
+      }
+      out.push({ midi: n.midi, start, dur });
+    });
+    for (let i = 0; i < out.length - 1; i++) {
+      const max = out[i + 1].start - out[i].start;
+      if (out[i].dur > max) out[i].dur = max;
+    }
+    return out;
+  }
+
+  // Đoán hợp âm cho từng ô nhịp từ TẤT CẢ các nốt (sau khi dịch tông).
+  function detectChordsByBar(all, bpb, shift) {
+    const bars = new Map();
+    all.forEach((n) => {
+      const s = n.start, e = n.start + n.dur;
+      for (let b = Math.floor(s / bpb); b * bpb < e; b++) {
+        const w = Math.min(e, (b + 1) * bpb) - Math.max(s, b * bpb);
+        if (w <= 0) continue;
+        let o = bars.get(b);
+        if (!o) { o = { w: new Array(12).fill(0), low: Infinity }; bars.set(b, o); }
+        o.w[mod12(n.midi + shift)] += w;
+        if (n.midi < o.low) o.low = n.midi;
+      }
+    });
+    const out = new Map();
+    bars.forEach((o, b) => {
+      const total = o.w.reduce((a, c) => a + c, 0);
+      if (total < 1) return;
+      if (o.low !== Infinity) o.w[mod12(o.low + shift)] += 1;           // thưởng nốt trầm nhất
+      let best = null;
+      CHORDS.forEach((c) => {
+        let score = 0;
+        for (let pc = 0; pc < 12; pc++) score += c.pcs.includes(pc) ? o.w[pc] : -0.6 * o.w[pc];
+        score += 0.5 * o.w[c.pcs[0]];                                    // thưởng nốt gốc
+        if (!best || score > best.score) best = { name: c.name, score };
+      });
+      if (best && best.score > 0) out.set(b, best.name);
+    });
+    return out;
+  }
+
+  // Chia thành các dòng: xuống dòng khi có quãng nghỉ dài (hết câu) hoặc đủ N ô nhịp.
+  function layout(events, bpb, o) {
+    const barsPerLine = o.barsPerLine || 4;
+    const phraseGap = 2; // nghỉ >= 2 phách = hết câu
+    const lines = [];
+    let cur = null, lineStartBar = 0, lastBar = 0, lastEnd = null;
+    events.forEach((ev) => {
+      const bar = Math.floor(ev.start / bpb + 1e-9);
+      const gap = lastEnd === null ? 0 : Math.max(0, ev.start - lastEnd);
+      const brk = cur === null || gap >= phraseGap || (bar - lineStartBar) >= barsPerLine;
+      if (brk) {
+        if (cur && gap > 0) cur.push({ t: 'rest', hidden: true, beats: gap });
+        cur = []; lines.push(cur); lineStartBar = bar; lastBar = bar;
+        if (!ev.chord && ev.ctx) ev.chord = ev.ctx;                      // đầu dòng luôn ghi lại hợp âm đang chạy
+      } else {
+        if (bar > lastBar) { cur.push({ t: 'bar' }); lastBar = bar; }
+        if (gap > 0) cur.push({ t: 'rest', hidden: gap < 1, beats: gap });
+      }
+      cur.push({
+        t: 'note', midi: ev.midi, beats: ev.dur,
+        dashes: Math.max(0, Math.round(ev.dur) - 1),
+        chord: ev.chord || null,
+      });
+      lastEnd = ev.start + ev.dur;
+    });
+    return lines;
+  }
+
+  function finalize(song) {
+    let id = 0, count = 0;
+    song.lines.forEach((line) => line.forEach((tk) => { if (tk.t === 'note') { tk.id = id++; count++; } }));
+    song.info = song.info || {};
+    song.info.noteCount = count;
+    return song;
+  }
+
+  const emptySong = (msg) => ({ lines: [], info: { error: msg, noteCount: 0 } });
+
+  /*
+   * data = { ppq, timeSig:[4,4], tracks:[{ name, percussion, notes:[{midi, ticks, durationTicks}] }] }
+   * opts = { instrument, transpose:'auto'|số, snap, barsPerLine, track:'auto'|chỉ số }
+   */
+  function convertMidi(data, opts) {
+    opts = opts || {};
+    const ppq = data.ppq || 480;
+    const ts = data.timeSig || [4, 4];
+    const bpb = (ts[0] * 4) / ts[1];                                     // số phách (nốt đen) mỗi ô nhịp
+    const all = [];
+    data.tracks.forEach((tr, i) => {
+      if (tr.percussion) return;
+      tr.notes.forEach((n) => all.push({ midi: n.midi, start: n.ticks / ppq, dur: Math.max(n.durationTicks / ppq, 0.01), track: i }));
+    });
+    const auto = opts.track === undefined || opts.track === null || opts.track === 'auto';
+    const melodyTrack = auto ? pickMelodyTrack(data.tracks) : Number(opts.track);
+    const raw = all.filter((n) => n.track === melodyTrack);
+    if (!raw.length) return emptySong('Không tìm thấy nốt nhạc nào trong file này.');
+
+    const melody = quantize(skyline(raw), 0.5);
+    if (!melody.length) return emptySong('Không tìm thấy giai điệu rõ ràng. Thử chọn track khác.');
+    const mapper = makeMapper(melody.map((n) => n.midi), opts);
+    const chordMap = detectChordsByBar(all, bpb, mapper.shift);
+
+    const events = melody.map((n) => ({ midi: mapper.map(n.midi), start: n.start, dur: n.dur }));
+    let lastBarSeen = null, lastChord = null;
+    events.forEach((ev) => {
+      const bar = Math.floor(ev.start / bpb + 1e-9);
+      if (bar !== lastBarSeen) {
+        lastBarSeen = bar;
+        const c = chordMap.get(bar);
+        if (c) { if (c !== lastChord) ev.chord = c; lastChord = c; }
+      }
+      ev.ctx = lastChord;
+    });
+
+    return finalize({
+      lines: layout(events, bpb, opts),
+      info: { shift: mapper.shift, tonic: NOTE_NAMES[mod12(-mapper.shift)], octave: mapper.octave / 12, folded: mapper.folded, track: melodyTrack, instrument: opts.instrument },
+    });
+  }
+
+  /* ---------- 4. ĐỌC VĂN BẢN (DÁN TRỰC TIẾP / OCR) ---------- */
+  /*
+   * Cú pháp được hiểu:
+   *   Số Jianpu 1-7, chữ C D E F G A B (hoa/thường), 0 = nghỉ, "-" = kéo dài, "|" = vạch nhịp
+   *   [Am] = hợp âm cho nốt phía sau
+   *   Cao hơn 1 quãng tám: 1'  1^  hoặc chấm trên 1̇        Thấp hơn: 1_  hoặc chấm dưới 1̣
+   *   Thăng/giáng: C#  Bb  #4  b3        Quãng tám tuyệt đối cho chữ: C5 (C ở quãng tám 5)
+   *   Dấu phẩy, chấm phẩy được bỏ qua.
+   */
+  function parseText(text) {
+    const lines = [];
+    String(text).replace(/\r/g, '').split('\n').forEach((raw) => {
+      const s = raw.normalize('NFD');                                    // tách "Ċ" thành "C" + dấu chấm
+      const toks = [];
+      let pendingChord = null, pendingAcc = 0, i = 0;
+      while (i < s.length) {
+        const ch = s[i];
+        if (/[\s,;.]/.test(ch)) { i++; continue; }
+        if (ch === '|' || ch === '｜') { toks.push({ t: 'bar' }); i++; continue; }
+        if (ch === '[') {
+          const end = s.indexOf(']', i);
+          if (end === -1) { i++; continue; }
+          pendingChord = s.slice(i + 1, end).trim() || null;
+          i = end + 1; continue;
+        }
+        if (ch === '-' || ch === '–' || ch === '—') {
+          for (let j = toks.length - 1; j >= 0; j--) if (toks[j].t === 'note') { toks[j].dashes++; break; }
+          i++; continue;
+        }
+        if (ch === '0') { toks.push({ t: 'rest' }); i++; continue; }
+        if (ch === '#' || ch === '♯') { pendingAcc = 1; i++; continue; }
+        if (ch === '♭' || (ch === 'b' && /[1-7]/.test(s[i + 1] || ''))) { pendingAcc = -1; i++; continue; }
+
+        let pc, isLetter = false;
+        if (/[1-7]/.test(ch)) pc = DEGREE_PC[Number(ch)];
+        else if (/[A-Ga-g]/.test(ch)) { pc = LETTER_PC[ch.toUpperCase()]; isLetter = true; }
+        else { i++; continue; }
+        i++;
+
+        let acc = pendingAcc, oct = 0, abs = null;
+        pendingAcc = 0;
+        while (i < s.length) {
+          const m = s[i];
+          if (m === '#' || m === '♯') acc++;
+          else if (m === '♭' || (isLetter && m === 'b')) acc--;
+          else if (m === "'" || m === '’' || m === '*' || m === '^' || m === '\u0307' || m === '↑') oct++;
+          else if (m === '_' || m === '\u0323' || m === '↓') oct--;
+          else if (isLetter && abs === null && /[0-9]/.test(m)) abs = Number(m);
+          else break;
+          i++;
+        }
+        toks.push({ t: 'note', pc, acc, oct, abs, dashes: 0, chord: pendingChord });
+        pendingChord = null;
+      }
+      if (toks.some((t) => t.t === 'note')) lines.push(toks);
+    });
+    return lines;
+  }
+
+  function convertText(text, opts) {
+    opts = opts || {};
+    const instr = INSTRUMENTS[opts.instrument] || INSTRUMENTS.kalimba17;
+    const parsed = parseText(text);
+    const pitches = [];
+    parsed.forEach((line) => line.forEach((tk) => {
+      if (tk.t !== 'note') return;
+      tk.midi = 12 * ((tk.abs !== null ? tk.abs : instr.baseOctave + tk.oct) + 1) + tk.pc + tk.acc;
+      pitches.push(tk.midi);
+    }));
+    if (!pitches.length) return emptySong('Chưa đọc được nốt nào. Hãy nhập kiểu: 1 2 3 hoặc C D E.');
+
+    const mapper = makeMapper(pitches, opts);
+    const lines = parsed.map((line) => line.map((tk) => {
+      if (tk.t === 'note') {
+        return {
+          t: 'note', midi: mapper.map(tk.midi), beats: 1 + tk.dashes, dashes: tk.dashes,
+          chord: tk.chord ? transposeChordName(tk.chord, mapper.shift) : null,
+        };
+      }
+      return tk.t === 'rest' ? { t: 'rest', beats: 1 } : { t: 'bar' };
+    }));
+    return finalize({
+      lines,
+      info: { shift: mapper.shift, tonic: NOTE_NAMES[mod12(-mapper.shift)], octave: mapper.octave / 12, folded: mapper.folded, instrument: opts.instrument },
+    });
+  }
+
+  /* ---------- 5. XUẤT KẾT QUẢ ---------- */
+
+  // Văn bản thuần (dùng cho nút Copy). Có thể dán ngược lại vào ô "Dán văn bản".
+  function toPlainText(song, o) {
+    const instr = INSTRUMENTS[o.instrument] || INSTRUMENTS.kalimba17;
+    return song.lines.map((line) => {
+      const parts = [];
+      line.forEach((tk) => {
+        if (tk.t === 'bar') parts.push('|');
+        else if (tk.t === 'rest') { if (!tk.hidden) parts.push('0'); }
+        else {
+          if (o.showChords && tk.chord) parts.push('[' + tk.chord + ']');
+          parts.push(noteLabel(tk.midi, o.style, instr, o.marks));
+          if (o.showDashes) for (let d = 0; d < tk.dashes; d++) parts.push('-');
+        }
+      });
+      return parts.join(' ') + (line.lyric ? '\n' + line.lyric : '');
+    }).join('\n');
+  }
+
+  // Danh sách nốt để phát bằng Tone.js: [{ id, midi, time(giây), dur(giây) }]
+  function playbackEvents(song, bpm) {
+    const spb = 60 / bpm;
+    let beat = 0;
+    const events = [];
+    song.lines.forEach((line) => line.forEach((tk) => {
+      if (tk.t === 'note') {
+        events.push({ id: tk.id, midi: tk.midi, time: beat * spb, dur: Math.max(0.12, tk.beats * spb * 0.95) });
+        beat += tk.beats;
+      } else if (tk.t === 'rest') beat += tk.beats;
+    }));
+    return { events, total: beat * spb };
+  }
+
+
+  /*
+   * Lời bài hát + hợp âm: mỗi dòng lời ứng với một dòng nốt (theo thứ tự).
+   * Ví dụ dòng lời:  [C]Lấp lánh [F]ngôi [C]sao
+   * Các hợp âm trong dòng được rải đều lên các nốt của dòng đó (và dịch tông theo bài).
+   */
+  function applyLyrics(song, text) {
+    song.lines.forEach((l) => { delete l.lyric; });
+    if (!text || !text.trim() || !song.lines.length) return;
+    const shift = (song.info && song.info.shift) || 0;
+    const rows = String(text).replace(/\r/g, '').split('\n').filter((r) => r.trim() !== '');
+    rows.forEach((row, i) => {
+      const line = song.lines[i];
+      if (!line) return;
+      const chords = [];
+      row.replace(/\[([^\]]+)\]/g, (m, c) => { chords.push(transposeChordName(c.trim(), shift)); return m; });
+      const lyric = row.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim();
+      if (lyric) line.lyric = lyric;
+      const notes = line.filter((t) => t.t === 'note');
+      if (chords.length && notes.length) {
+        notes.forEach((n) => { n.chord = null; });
+        chords.forEach((c, k) => { notes[Math.floor((k * notes.length) / chords.length)].chord = c; });
+      }
+    });
+  }
+
+  const api = {
+    INSTRUMENTS, CHORDS, midiName, bestTranspose, fitOctave, snapWhite, foldIntoRange, makeMapper,
+    transposeChordName, noteLabel, describeTracks, pickMelodyTrack, skyline, quantize,
+    detectChordsByBar, convertMidi, parseText, convertText, toPlainText, playbackEvents, applyLyrics,
+  };
+  root.Converter = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+  </script>
+
+  <!-- 3. GIAO DIỆN -->
+  <script>
+/*
+ * app.js — Giao diện: nhận nguồn nhạc, gọi bộ xử lý lõi (converter.js), hiển thị,
+ * phát âm thanh (Tone.js), xuất Word / PDF, kho nhạc cộng đồng (Supabase).
+ *
+ * Quy tắc an toàn: mọi chữ do người dùng nhập (tên bài, hợp âm...) chỉ được đưa vào trang bằng
+ * textContent, KHÔNG dùng innerHTML, để không ai chèn được mã độc.
+ */
+(function () {
+  'use strict';
+
+  const C = window.Converter;
+  const CFG = window.APP_CONFIG || {};
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  const state = {
+    source: null,      // { kind:'midi', data, name } hoặc { kind:'text', text, name }
+    song: null,
+    playing: false,
+    ocrPending: false, // văn bản trong ô "Dán nốt" vừa đến từ OCR
+  };
+
+  const sb = (window.supabase && CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY)
+    : null;
+
+  /* ---------- Tiện ích ---------- */
+
+  function setStatus(msg, kind) {
+    const el = $('#status');
+    el.textContent = msg || '';
+    el.className = 'mt-3 min-h-[1.25rem] text-sm ' + (kind === 'error' ? 'text-red-700' : kind === 'ok' ? 'text-pine' : 'text-ink/80');
+  }
+
+  async function run(btn, fn) {
+    btn.disabled = true;
+    try { await fn(); }
+    catch (err) { console.error(err); setStatus(err && err.message ? err.message : 'Có lỗi xảy ra.', 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  const baseName = (n) => String(n).replace(/\.[^.]+$/, '');
+  const safeFile = (n) => (String(n).replace(/[\\/:*?"<>|]+/g, '').trim() || 'ky-am');
+
+  function download(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  }
+
+  async function apiFetch(path, init) {
+    const base = (CFG.API_BASE || '').replace(/\/$/, '');
+    if (!base) throw new Error('Tab này cần máy chủ Python riêng. Hãy điền API_BASE trong phần CONFIG ở đầu file (xem hướng dẫn).');
+    let res;
+    try { res = await fetch(base + path, init); }
+    catch (e) { throw new Error('Không kết nối được máy chủ (' + base + '). Hãy kiểm tra backend đã chạy chưa.'); }
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.detail || ('Máy chủ báo lỗi ' + res.status));
+    }
+    return res;
+  }
+
+  async function sha256Hex(bufOrText) {
+    const data = typeof bufOrText === 'string' ? new TextEncoder().encode(bufOrText) : bufOrText;
+    const h = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* ---------- Đọc cài đặt ---------- */
+
+  function getOpts() {
+    const t = $('#transpose').value;
+    return {
+      instrument: $('#instrument').value,
+      style: $('#style').value,
+      marks: $('#marks').value,
+      transpose: t === 'auto' ? 'auto' : Number(t),
+      barsPerLine: Number($('#barsPerLine').value),
+      snap: $('#optSnap').checked,
+      showChords: $('#optChords').checked,
+      showDashes: $('#optDash').checked,
+      track: $('#trackSel').value || 'auto',
+      bpm: Math.min(220, Math.max(40, Number($('#bpm').value) || 90)),
+    };
+  }
+
+  /* ---------- Chuyển đổi và hiển thị ---------- */
+
+  function convert() {
+    const src = state.source;
+    if (!src) return false;
+    const o = getOpts();
+    state.song = src.kind === 'text' ? C.convertText(src.text, o) : C.convertMidi(src.data, o);
+    C.applyLyrics(state.song, $('#lyricsInput').value);
+    renderAll();
+    return state.song.info.noteCount > 0;
+  }
+
+  function renderAll() {
+    renderInfo();
+    renderSheet();
+  }
+
+  function renderInfo() {
+    const el = $('#info');
+    const s = state.song;
+    if (!s) { el.textContent = ''; return; }
+    if (s.info.error) { el.textContent = s.info.error; return; }
+    const i = s.info, instr = C.INSTRUMENTS[getOpts().instrument];
+    const parts = [i.noteCount + ' nốt'];
+    parts.push(i.shift ? 'Đã dịch tông ' + (i.shift > 0 ? '+' : '') + i.shift + ' nửa cung (tông gốc khoảng ' + i.tonic + ' về C)' : 'Giữ nguyên tông C');
+    if (i.octave) parts.push('dời ' + (i.octave > 0 ? '+' : '') + i.octave + ' quãng tám cho vừa đàn');
+    if (i.folded) parts.push(i.folded + ' nốt vượt dải đàn đã được đưa về trong dải');
+    parts.push('dải đàn ' + C.midiName(instr.min) + ' đến ' + C.midiName(instr.max));
+    el.textContent = parts.join('. ') + '.';
+  }
+
+  function cell(kind, chord, text, id) {
+    const c = document.createElement('div');
+    c.className = 'cell ' + kind;
+    const ch = document.createElement('div');
+    ch.className = 'chord';
+    ch.textContent = chord || '';
+    const n = document.createElement('div');
+    n.className = 'note';
+    n.textContent = text;
+    if (id !== undefined) n.id = 'n' + id;
+    c.append(ch, n);
+    return c;
+  }
+
+  function renderSheet() {
+    const sheet = $('#sheet');
+    sheet.textContent = '';
+    sheet.classList.toggle('hide-chords', !$('#optChords').checked);
+    const s = state.song;
+    if (!s || !s.lines.length) {
+      const p = document.createElement('p');
+      p.className = 'py-6 text-ink/60';
+      p.textContent = 'Chọn một nguồn nhạc ở bên trái, kết quả sẽ hiện ở đây.';
+      sheet.append(p);
+      return;
+    }
+    const o = getOpts(), instr = C.INSTRUMENTS[o.instrument];
+    s.lines.forEach((line) => {
+      const row = document.createElement('div');
+      row.className = 'sheet-line';
+      line.forEach((tk) => {
+        if (tk.t === 'bar') row.append(cell('bar', '', '|'));
+        else if (tk.t === 'rest') { if (!tk.hidden) row.append(cell('rest', '', '0')); }
+        else {
+          row.append(cell('note', tk.chord, C.noteLabel(tk.midi, o.style, instr, o.marks), tk.id));
+          if (o.showDashes) for (let d = 0; d < tk.dashes; d++) row.append(cell('dash', '', '–'));
+        }
+      });
+      if (line.lyric) { const ly = document.createElement('div'); ly.className = 'lyric'; ly.textContent = line.lyric; row.append(ly); }
+      sheet.append(row);
+    });
+  }
+
+  /* ---------- Nguồn 1: MIDI (và MIDI do AI tạo ra) ---------- */
+
+  function adaptMidi(midi) {
+    const ts = midi.header.timeSignatures && midi.header.timeSignatures[0];
+    return {
+      ppq: midi.header.ppq,
+      timeSig: ts ? ts.timeSignature : [4, 4],
+      tracks: midi.tracks.map((t) => ({
+        name: t.name || (t.instrument && t.instrument.name) || '',
+        percussion: !!(t.instrument && t.instrument.percussion),
+        notes: t.notes.map((n) => ({ midi: n.midi, ticks: n.ticks, durationTicks: n.durationTicks })),
+      })),
+    };
+  }
+
+  function fillTracks(tracks) {
+    const sel = $('#trackSel');
+    sel.textContent = '';
+    const auto = C.pickMelodyTrack(tracks);
+    const o0 = document.createElement('option');
+    o0.value = 'auto';
+    o0.textContent = 'Tự động' + (auto >= 0 ? ' (đang chọn track ' + (auto + 1) + ')' : '');
+    sel.append(o0);
+    C.describeTracks(tracks).forEach((t) => {
+      if (t.percussion || !t.count) return;
+      const o = document.createElement('option');
+      o.value = String(t.index);
+      o.textContent = 'Track ' + (t.index + 1) + (t.name ? ' — ' + t.name : '') + ' (' + t.count + ' nốt)';
+      sel.append(o);
+    });
+    $('#trackWrap').classList.toggle('hidden', sel.options.length <= 2);
+  }
+
+  function loadMidi(buf, name, sourceKind, share) {
+    const MidiCls = window.Midi && (window.Midi.Midi || window.Midi);
+    if (!MidiCls) throw new Error('Chưa tải được thư viện đọc MIDI. Hãy kiểm tra kết nối mạng rồi tải lại trang.');
+    let midi;
+    try { midi = new MidiCls(buf); }
+    catch (e) { throw new Error('File này không phải MIDI hợp lệ.'); }
+    state.source = { kind: 'midi', data: adaptMidi(midi), name };
+    $('#titleInput').value = name;
+    $('#printTitle').textContent = name;
+    fillTracks(state.source.data.tracks);
+    const ok = convert();
+    if (ok && share) shareSong({ title: name, source: sourceKind, midiBuffer: buf });
+    return ok;
+  }
+
+  $('#midiFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      setStatus('Đang đọc file MIDI…', 'busy');
+      const ok = loadMidi(await f.arrayBuffer(), baseName(f.name), 'midi', true);
+      setStatus(ok ? 'Xong. Bấm “Phát âm thanh” để nghe thử.' : 'Không có nốt nào để hiển thị.', ok ? 'ok' : 'error');
+    } catch (err) { setStatus(err.message, 'error'); }
+  });
+
+  /* ---------- Nguồn 2: MP3 -> AI (backend) ---------- */
+
+  $('#btnMp3').addEventListener('click', () => run($('#btnMp3'), async () => {
+    const f = $('#mp3File').files[0];
+    if (!f) throw new Error('Hãy chọn một file âm thanh trước.');
+    setStatus('AI đang nghe bài hát, mất khoảng 30–90 giây. Máy chủ miễn phí lần đầu có thể cần thêm ~1 phút để khởi động.', 'busy');
+    const fd = new FormData();
+    fd.append('file', f);
+    const res = await apiFetch('/api/audio-to-midi', { method: 'POST', body: fd });
+    const ok = loadMidi(await res.arrayBuffer(), baseName(f.name), 'mp3', true);
+    setStatus(ok ? 'Xong. AI có thể nghe sai vài nốt, hãy nghe thử và đối chiếu.' : 'AI không tìm thấy giai điệu rõ ràng.', ok ? 'ok' : 'error');
+  }));
+
+  /* ---------- Nguồn 3: YouTube -> backend ---------- */
+
+  $('#btnYt').addEventListener('click', () => run($('#btnYt'), async () => {
+    const url = $('#ytUrl').value.trim();
+    if (!url) throw new Error('Hãy dán link YouTube trước.');
+    setStatus('Đang tải âm thanh và phân tích, mất vài phút với bài dài…', 'busy');
+    const res = await apiFetch('/api/youtube-to-midi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    let title = 'Bài hát từ YouTube';
+    try { title = decodeURIComponent(res.headers.get('X-Title') || '') || title; } catch (e) { /* giữ tên mặc định */ }
+    const ok = loadMidi(await res.arrayBuffer(), title.slice(0, 120), 'youtube', true);
+    setStatus(ok ? 'Xong. Hãy nghe thử và đối chiếu với bài gốc.' : 'Không tìm thấy giai điệu rõ ràng.', ok ? 'ok' : 'error');
+  }));
+
+  /* ---------- Nguồn 4: ảnh sheet -> OCR (Tesseract.js) ---------- */
+
+  $('#btnOcr').addEventListener('click', () => run($('#btnOcr'), async () => {
+    const f = $('#ocrFile').files[0];
+    if (!f) throw new Error('Hãy chọn một ảnh trước.');
+    if (!window.Tesseract) throw new Error('Chưa tải được Tesseract.js. Hãy kiểm tra kết nối mạng.');
+    setStatus('Đang quét ảnh… (lần đầu phải tải dữ liệu nhận dạng, có thể mất vài chục giây)', 'busy');
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: (m) => { if (m.status === 'recognizing text') setStatus('Đang quét ảnh… ' + Math.round(m.progress * 100) + '%', 'busy'); },
+    });
+    try {
+      await worker.setParameters({
+        tessedit_char_whitelist: "0123456789ABCDEFGabcdefg#[]m|-' ",
+        preserve_interword_spaces: '1',
+      });
+      const { data } = await worker.recognize(f);
+      $('#textInput').value = data.text.replace(/[ \t]+/g, ' ').trim();
+    } finally { await worker.terminate(); }
+    state.ocrPending = true;
+    switchTab('text');
+    setStatus('Đã quét xong. Hãy đối chiếu với ảnh gốc, sửa chỗ nhầm rồi bấm “Chuyển đổi”. Dấu chấm trên/dưới số sẽ không được nhận ra.', 'ok');
+  }));
+
+  /* ---------- Nguồn 5: dán văn bản ---------- */
+
+  function convertFromTextBox(share) {
+    const text = $('#textInput').value.trim();
+    if (!text) throw new Error('Hãy dán dãy nốt vào ô trước.');
+    const title = $('#titleInput').value.trim() || 'Bản nhạc của tôi';
+    state.source = { kind: 'text', text, name: title };
+    $('#printTitle').textContent = title;
+    $('#trackWrap').classList.add('hidden');
+    const ok = convert();
+    if (ok && share) {
+      shareSong({ title, source: state.ocrPending ? 'ocr' : 'text', text });
+    }
+    state.ocrPending = false;
+    return ok;
+  }
+
+  $('#btnText').addEventListener('click', () => run($('#btnText'), async () => {
+    const ok = convertFromTextBox(true);
+    setStatus(ok ? 'Xong.' : 'Chưa đọc được nốt nào. Hãy xem phần “Cách viết nốt”.', ok ? 'ok' : 'error');
+  }));
+
+  /* ---------- Tab ---------- */
+
+  function switchTab(name) {
+    $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+    $$('[data-panel]').forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== name));
+  }
+  $$('.tab').forEach((t) => t.addEventListener('click', () => { switchTab(t.dataset.tab); setStatus(''); }));
+
+  /* ---------- Cài đặt: đổi là cập nhật ngay ---------- */
+
+  ['instrument', 'transpose', 'trackSel', 'barsPerLine', 'optSnap'].forEach((id) => $('#' + id).addEventListener('change', () => { stopPlay(); convert(); }));
+  ['style', 'marks', 'optChords', 'optDash'].forEach((id) => $('#' + id).addEventListener('change', renderSheet));
+  $('#titleInput').addEventListener('input', (e) => { $('#printTitle').textContent = e.target.value; });
+
+  /* ---------- Copy 1-Click ---------- */
+
+  function plainText() { return C.toPlainText(state.song, getOpts()); }
+  function requireSong() {
+    if (!state.song || !state.song.lines.length) { setStatus('Chưa có nốt nào để dùng. Hãy chọn nguồn nhạc trước.', 'error'); return false; }
+    return true;
+  }
+
+  $('#btnCopy').addEventListener('click', async () => {
+    if (!requireSong()) return;
+    const text = plainText();
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.append(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    setStatus('Đã chép vào bộ nhớ tạm. Bạn có thể dán vào Zalo, Messenger, Ghi chú…', 'ok');
+  });
+
+  /* ---------- Phát âm thanh (Tone.js) ---------- */
+
+  let synth = null;
+
+  function makeSynth(kind) {
+    if (synth) synth.dispose();
+    if (kind === 'kalimba') {
+      synth = new Tone.FMSynth({
+        harmonicity: 8, modulationIndex: 2, oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 1.2, sustain: 0.05, release: 1.2 },
+        modulation: { type: 'square' },
+        modulationEnvelope: { attack: 0.002, decay: 0.2, sustain: 0, release: 0.2 },
+      });
+    } else if (kind === 'organ') {
+      synth = new Tone.Synth({
+        oscillator: { type: 'custom', partials: [1, 0.5, 0.35, 0.2] },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.9, release: 0.15 },
+      });
+    } else {
+      synth = new Tone.Synth({
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.005, decay: 0.6, sustain: 0.15, release: 0.8 },
+      });
+    }
+    synth.toDestination();
+  }
+
+  function highlight(id) {
+    $$('#sheet .note.playing').forEach((n) => n.classList.remove('playing'));
+    const el = document.getElementById('n' + id);
+    if (el) { el.classList.add('playing'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  }
+
+  function stopPlay() {
+    if (!state.playing) return;
+    state.playing = false;
+    if (window.Tone) { Tone.Transport.stop(); Tone.Transport.cancel(0); }
+    if (synth) { synth.dispose(); synth = null; }
+    $$('#sheet .note.playing').forEach((n) => n.classList.remove('playing'));
+    $('#btnPlay').textContent = 'Phát âm thanh';
+  }
+
+  $('#btnPlay').addEventListener('click', async () => {
+    if (state.playing) { stopPlay(); return; }
+    if (!requireSong()) return;
+    if (!window.Tone) { setStatus('Chưa tải được Tone.js. Hãy kiểm tra kết nối mạng.', 'error'); return; }
+    await Tone.start();                                  // trình duyệt chỉ cho phát âm sau khi người dùng bấm
+    const o = getOpts();
+    makeSynth(C.INSTRUMENTS[o.instrument].synth);
+    const { events, total } = C.playbackEvents(state.song, o.bpm);
+    Tone.Transport.stop(); Tone.Transport.cancel(0); Tone.Transport.position = 0;
+    events.forEach((e) => {
+      Tone.Transport.schedule((time) => {
+        synth.triggerAttackRelease(Tone.Frequency(e.midi, 'midi').toFrequency(), e.dur, time);
+        Tone.Draw.schedule(() => highlight(e.id), time);
+      }, e.time);
+    });
+    Tone.Transport.schedule(() => { Tone.Draw.schedule(stopPlay, Tone.now()); }, total + 0.6);
+    Tone.Transport.start('+0.1');
+    state.playing = true;
+    $('#btnPlay').textContent = 'Dừng';
+  });
+
+  /* ---------- Xuất Word (.docx) ---------- */
+
+  $('#btnDocx').addEventListener('click', async () => {
+    if (!requireSong()) return;
+    if (!window.docx) { setStatus('Chưa tải được thư viện tạo Word. Hãy kiểm tra kết nối mạng.', 'error'); return; }
+    const { Document, Packer, Paragraph, TextRun } = window.docx;
+    const o = getOpts(), instr = C.INSTRUMENTS[o.instrument];
+    const title = $('#titleInput').value.trim() || 'Bản nhạc';
+    const FONT = 'Arial';
+
+    const children = [
+      new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: title, bold: true, size: 40, font: FONT })] }),
+      new Paragraph({ spacing: { after: 360 }, children: [new TextRun({ text: instr.label + (o.style === 'letter' ? ' · ký âm bằng chữ' : ' · ký âm bằng số'), size: 20, color: '666666', font: FONT })] }),
+    ];
+    state.song.lines.forEach((line) => {
+      const runs = [];
+      line.forEach((tk) => {
+        if (tk.t === 'bar') runs.push(new TextRun({ text: '|   ', size: 36, color: '999999', font: FONT }));
+        else if (tk.t === 'rest') { if (!tk.hidden) runs.push(new TextRun({ text: '0   ', size: 36, color: '777777', font: FONT })); }
+        else {
+          if (o.showChords && tk.chord) runs.push(new TextRun({ text: '[' + tk.chord + '] ', bold: true, size: 26, color: '7A5410', font: FONT }));
+          runs.push(new TextRun({ text: C.noteLabel(tk.midi, o.style, instr, o.marks) + '   ', size: 38, font: FONT }));
+          if (o.showDashes) for (let d = 0; d < tk.dashes; d++) runs.push(new TextRun({ text: '–   ', size: 38, color: '777777', font: FONT }));
+        }
+      });
+      children.push(new Paragraph({ spacing: { after: line.lyric ? 60 : 260, line: 440 }, children: runs }));
+      if (line.lyric) children.push(new Paragraph({ spacing: { after: 260 }, children: [new TextRun({ text: line.lyric, italics: true, size: 24, color: '444444', font: FONT })] }));
+    });
+
+    const doc = new Document({
+      sections: [{
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, // A4
+        children,
+      }],
+    });
+    download(await Packer.toBlob(doc), safeFile(title) + '.docx');
+    setStatus('Đã tạo file Word.', 'ok');
+  });
+
+  /* ---------- In / Tải PDF ---------- */
+
+  $('#btnPrint').addEventListener('click', () => {
+    if (!requireSong()) return;
+    setStatus('Trong hộp thoại in, chọn “Lưu dưới dạng PDF” nếu muốn có file PDF.', 'ok');
+    window.print();
+  });
+
+  /* ---------- Kho nhạc cộng đồng (Supabase) ---------- */
+
+  async function shareSong({ title, source, text, midiBuffer }) {
+    if (!sb || !$('#optShare').checked) return;
+    try {
+      const notation = text || plainText();
+      const hash = await sha256Hex(midiBuffer || notation);
+      let midiPath = null;
+      if (midiBuffer) {
+        const path = hash + '.mid';
+        const up = await sb.storage.from('midi-files').upload(path, new Blob([midiBuffer], { type: 'audio/midi' }), { contentType: 'audio/midi', upsert: false });
+        if (!up.error || /exist|duplicate/i.test(up.error.message || '')) midiPath = path;
+      }
+      const row = {
+        title: String(title).slice(0, 120),
+        source,
+        instrument: $('#instrument').value,
+        notation_text: notation.slice(0, 20000),
+        midi_path: midiPath,
+        file_hash: hash,
+      };
+      const ins = await sb.from('songs').insert(row);
+      if (ins.error && ins.error.code !== '23505') console.warn('Không chia sẻ được:', ins.error.message); // 23505 = đã có bản trùng
+    } catch (e) { console.warn('Không chia sẻ được:', e); }                                                  // lỗi chia sẻ không được làm hỏng việc chính
+  }
+
+  async function loadCommunity() {
+    const q = $('#searchBox').value.trim();
+    const ul = $('#communityList');
+    ul.textContent = '';
+    const msg = (t) => { const li = document.createElement('li'); li.className = 'py-3 text-ink/65'; li.textContent = t; ul.append(li); };
+    if (!sb) { msg('Chưa cấu hình Supabase (xem README, mục 5). Kho cộng đồng sẽ hiện ở đây.'); return; }
+    let query = sb.from('songs')
+      .select('id,title,source,instrument,notation_text,midi_path')
+      .eq('approved', true);
+    if (q) query = query.ilike('title', '%' + q.replace(/[\\%_]/g, (m) => '\\' + m) + '%');   // tìm theo tên bài
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(30);
+    if (error) { msg('Không tải được kho nhạc: ' + error.message); return; }
+    if (!data.length) { msg(q ? 'Không tìm thấy bài nào khớp “' + q + '”.' : 'Chưa có bài nào được duyệt. Bài bạn chia sẻ sẽ xuất hiện ở đây sau khi quản trị viên duyệt.'); return; }
+    data.forEach((s) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'flex w-full items-baseline justify-between gap-3 py-2.5 text-left hover:bg-mist/70';
+      const t = document.createElement('span'); t.className = 'font-medium'; t.textContent = s.title;
+      const k = document.createElement('span'); k.className = 'shrink-0 text-xs text-ink/60'; k.textContent = s.source;
+      b.append(t, k);
+      b.addEventListener('click', () => run(b, () => openCommunitySong(s)));
+      li.append(b);
+      ul.append(li);
+    });
+  }
+
+  async function openCommunitySong(s) {
+    setStatus('Đang mở “' + s.title + '”…', 'busy');
+    if (s.midi_path) {
+      const url = sb.storage.from('midi-files').getPublicUrl(s.midi_path).data.publicUrl;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Không tải được file MIDI của bài này.');
+      loadMidi(await res.arrayBuffer(), s.title, 'midi', false);
+    } else {
+      $('#textInput').value = s.notation_text || '';
+      $('#titleInput').value = s.title;
+      convertFromTextBox(false);
+    }
+    setStatus('Đã mở “' + s.title + '”.', 'ok');
+  }
+
+  $('#btnRefresh').addEventListener('click', () => loadCommunity());
+  let searchTimer = null;
+  $('#searchBox').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadCommunity, 350); });
+  $('#lyricsInput').addEventListener('input', () => { if (state.source) convert(); });
+
+  /* ---------- Khởi động ---------- */
+
+  function init() {
+    // Hình trang trí: 17 lưỡi đàn kalimba, lưỡi giữa dài nhất
+    const svg = $('#tines'), NS = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < 17; i++) {
+      const d = Math.abs(i - 8), h = 60 - d * 3.4;
+      const r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', String(i * 10 + 2)); r.setAttribute('y', String(62 - h));
+      r.setAttribute('width', '6'); r.setAttribute('height', String(h)); r.setAttribute('rx', '3');
+      r.setAttribute('fill', i === 8 ? '#D9A93E' : '#B07D1E');
+      r.setAttribute('opacity', String(1 - d * 0.045));
+      svg.append(r);
+    }
+
+    const ins = $('#instrument');
+    Object.keys(C.INSTRUMENTS).forEach((k) => {
+      const o = document.createElement('option'); o.value = k; o.textContent = C.INSTRUMENTS[k].label; ins.append(o);
+    });
+
+    const tr = $('#transpose');
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; tr.append(o); };
+    add('auto', 'Tự động về C (phím trắng)');
+    add('0', 'Giữ nguyên');
+    for (let s = -6; s <= 6; s++) if (s) add(String(s), (s > 0 ? '+' : '') + s + ' nửa cung');
+
+    // Hiện sẵn ví dụ để trang không bị trống
+    state.source = { kind: 'text', text: $('#textInput').value, name: $('#titleInput').value };
+    convert();
+    loadCommunity();
+  }
+
+  window.addEventListener('beforeunload', stopPlay);
+  init();
+})();
+
+  </script>
+</body>
+</html>
