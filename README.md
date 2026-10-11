@@ -1,146 +1,98 @@
-# Ký âm một hàng cho Kalimba 17 phím, Organ, Piano
+# 🎵 Ký Âm Một Hàng — Web App Chuyển Đổi Bản Nhạc Cho Kalimba, Organ & Piano
 
-Web app biến MIDI, MP3, link YouTube, ảnh sheet hoặc dãy nốt bạn gõ thành **một hàng nốt dễ đánh**, có hợp âm phía trên, nghe thử được, in được khổ A4 và xuất Word.
+**Ký Âm Một Hàng** là ứng dụng web miễn phí giúp biến các nguồn nhạc phức tạp (file MIDI, file MP3 tách vocal, link video YouTube, ảnh chụp bản sheet/tab nhạc, hoặc văn bản dán trực tiếp) thành **dãy nốt ký âm 1 hàng ngang đơn giản** (dạng Số Jianpu `1 2 3` hoặc Dạng Chữ `C D E`).
 
-## 1. Cấu trúc thư mục
+Ứng dụng tự động tích hợp hợp âm đệm tay trái, hỗ trợ nghe thử giai điệu trực tiếp, cho phép copy 1-touch, xuất file Word (`.docx`), in ấn chuẩn khổ A4/PDF, và chia sẻ vào kho nhạc cộng đồng.
 
-```
-kalimba-notation/
-├── frontend/                  ← phần web (HTML + Tailwind + JS), đưa lên Vercel
-│   ├── index.html             ← giao diện
-│   ├── config.js              ← địa chỉ backend và khóa Supabase (công khai)
-│   └── js/
-│       ├── converter.js       ← BỘ XỬ LÝ LÕI: chọn giai điệu, dịch tông, chữ↔số, hợp âm, ngắt dòng
-│       ├── converter.test.js  ← bài kiểm tra tự động cho converter.js
-│       └── app.js             ← nối giao diện với converter: tải file, phát nhạc, Word, in, kho cộng đồng
-├── backend/                   ← máy chủ Python (chỉ cần cho MP3 và YouTube), đưa lên Render
-│   ├── main.py                ← FastAPI: /api/audio-to-midi và /api/youtube-to-midi
-│   ├── requirements.txt       ← danh sách thư viện Python
-│   └── Dockerfile             ← để Render cài sẵn ffmpeg
-├── supabase/
-│   └── setup.sql              ← tạo bảng và quyền cho kho nhạc cộng đồng
-├── .gitignore
-└── README.md
-```
+---
 
-**Ý tưởng chính:** mọi nguồn nhạc đều đi về cùng một chỗ.
-MP3 và YouTube được backend đổi thành MIDI, rồi frontend xử lý giống hệt file `.mid`. Ảnh (OCR) và văn bản thì thành chuỗi nốt. Nhờ vậy bạn chỉ cần sửa logic ở `converter.js`.
+## 🛠️ 1. Cấu Trúc Mã Nguồn & Công Nghệ (Tech Stack)
 
-| Nguồn | Chạy ở đâu | Cần backend? |
-|---|---|---|
-| MIDI | trình duyệt (`@tonejs/midi`) | Không |
-| Dán văn bản | trình duyệt | Không |
-| Ảnh sheet (OCR) | trình duyệt (`Tesseract.js`) | Không |
-| MP3 | backend (`Basic Pitch`) | Có |
-| YouTube | backend (`yt-dlp` + `Basic Pitch`) | Có |
+Dự án được thiết kế theo tư duy **All-In-One (Single-File Architecture)** tối giản cho người mới học lập trình (Newbie):
 
-## 2. Cài công cụ (một lần)
+* **Frontend Engine:** HTML5, Tailwind CSS (qua CDN), Vanilla JavaScript ES6+.
+* **MIDI Parsing:** Thư viện `@tonejs/midi` xử lý và trích xuất dữ liệu nốt nhạc trực tiếp trên trình duyệt.
+* **OCR (Quét ảnh):** Thư viện `Tesseract.js` nhận diện ký tự chữ & số từ ảnh chụp sheet/tab.
+* **Audio Synthesizer (Nghe thử):** Thư viện `Tone.js` tạo lập âm thanh tổng hợp cho Kalimba, Organ và Piano.
+* **Xuất File Word:** Thư viện `docx.js` dựng và tải xuống file `.docx`.
+* **Database Cộng Đồng (UGC):** `Supabase JavaScript SDK` kết nối lưu trữ kho bài hát dùng chung.
 
-1. **VS Code**: https://code.visualstudio.com
-2. Tiện ích **Live Server** (tác giả Ritwick Dey): bấm biểu tượng Extensions bên trái VS Code, tìm "Live Server", bấm Install.
-3. **Node.js** (chỉ để chạy bài kiểm tra, không bắt buộc): https://nodejs.org
-4. **Python 3.10 hoặc 3.11** (chỉ khi dùng MP3/YouTube). Nên tránh bản mới hơn vì `basic-pitch` có thể chưa hỗ trợ.
-5. **ffmpeg** (chỉ khi dùng MP3/YouTube ở máy bạn):
-   - Windows: mở PowerShell gõ `winget install Gyan.FFmpeg`, rồi **đóng và mở lại VS Code**
-   - macOS: `brew install ffmpeg`
+---
 
-## 3. Chạy phần web (không cần backend)
+## 🚀 2. Các Tính Năng Cốt Lõi (Core Features)
 
-1. Mở VS Code, chọn **File → Open Folder** và mở thư mục `kalimba-notation`.
-2. Chuột phải vào `frontend/index.html` → **Open with Live Server**.
-3. Trình duyệt mở ra. Bạn đã dùng được ngay các tab **MIDI**, **Dán nốt**, **Ảnh sheet**. Máy cần có mạng vì thư viện tải từ CDN.
+### 📥 2.1. Đa dạng nguồn đầu vào (Multi-Input Support)
+1. **File MIDI (`.mid`, `.midi`):** Phân tích chính xác 100% từng nốt nhạc, tự động lọc lấy track giai điệu chính (tay phải) bằng thuật toán *Skyline*.
+2. **Dán văn bản nốt trực tiếp:** Nhập chuỗi nốt dạng Chữ (`C D E F G A B`) hoặc Số (`1 2 3 4 5 6 7`). Hỗ trợ các ký hiệu quãng cao/thấp (`1'`, `1*`, `1_`), phím thăng/giáng (`C#`, `Bb`), vạch nhịp (`|`), nốt kéo dài (`-`) và nghỉ (`0`).
+3. **Quét ảnh Sheet / Tab nhạc (OCR):** Tải lên ảnh chụp bản nhạc, tự động trích xuất chuỗi ký tự sang ô chỉnh sửa.
+4. **File MP3 & Link YouTube (Yêu cầu Backend Python):** Tích hợp giao diện kết nối API chuyển âm thanh/video thành dữ liệu nốt MIDI thông qua AI (`Basic Pitch` & `yt-dlp`).
 
-Muốn chạy bài kiểm tra cho bộ lõi, mở Terminal trong VS Code (**Terminal → New Terminal**):
+### ⚙️ 2.2. Bộ xử lý lõi & Chuyển đổi thông minh (Core Converter Engine)
+* **Bộ chọn nhạc cụ linh hoạt:**
+  * **Kalimba 17 phím (C4–E6):** Giới hạn dải nốt chuẩn, tự động dời quãng tám để nốt rơi đúng phím đàn.
+  * **Organ (C3–C6) & Piano tay phải (C4–C6):** Mở rộng quãng âm đa dạng.
+* **Tự động dịch Tông (Auto-Transpose):** Đoán và đưa toàn bộ bản nhạc về cung **C Major / A Minor** để người mới chơi hoàn toàn trên các phím trắng cơ bản.
+* **Ép phím trắng (Snap to White Keys):** Tự động chuyển các nốt thăng/giáng bất thường về phím trắng sát kề bên dưới.
+* **Gợi ý hợp âm đệm:** Tự động phân tích ô nhịp và hiển thị hợp âm gốc (`[C]`, `[Am]`, `[F]`, `[G]...`) phía trên câu hát.
+* **Hỗ trợ Lời bài hát (Lyrics Alignment):** Cho phép nhập lời kèm hợp âm (dạng Hợp Âm Chuẩn) để khớp từng dòng lời tương ứng dưới dòng nốt.
 
-```bash
-cd frontend
-node js/converter.test.js
-```
+### 📤 2.3. Đầu ra, In ấn & Trải nghiệm người dùng (Output & UX)
+* **Chế độ hiển thị 2 chiều:** Chuyển đổi qua lại linh hoạt giữa **Ký âm Số (Jianpu)** và **Ký âm Chữ (Letter)**.
+* **Phát âm thanh (Audio Playback):** Nghe thử giai điệu trực tiếp với âm thanh giả lập đặc trưng của Kalimba / Organ / Piano, có hiệu ứng highlight nốt đang phát.
+* **Sao chép 1-Click (Copy to Clipboard):** Chép toàn bộ dãy nốt dạng text để dán nhanh vào Zalo, Messenger, Notes.
+* **Xuất file Word (`.docx`):** Tạo file tài liệu được định dạng đẹp mắt, sẵn sàng chỉnh sửa.
+* **Tối ưu In ấn & Xuất PDF:** Tự động căn chỉnh lề, ẩn các công cụ điều khiển rườm rà, đưa bản nhạc về định dạng trang giấy A4 tiêu chuẩn.
+* **Kho nhạc cộng đồng (UGC):** Lưu trữ và tìm kiếm các bản nhạc do người dùng đóng góp thông qua hệ thống Supabase.
 
-Thấy dòng "Tất cả bài kiểm tra đều đạt" là ổn.
+---
 
-## 4. Chạy backend (cho MP3 và YouTube)
+## 💻 3. Hướng Dẫn Sử Dụng Chi Tiết (User Guide)
 
-Mở Terminal mới trong VS Code:
+### 🎹 Cách tập đàn với kết quả hiển thị trên web:
+1. **Bước 1: Chọn nguồn nhạc** ở cột bên trái (Ví dụ: Tải file MIDI hoặc dán đoạn nốt `[C] 1 1 5 5 | [F] 6 6 [C] 5 -`).
+2. **Bước 2: Tùy chỉnh cách đánh** tại phần *Cách đánh*:
+   * Chọn loại đàn bạn có (*Kalimba 17 phím* hoặc *Organ*).
+   * Chọn dạng hiển thị mong muốn (*Số: 1 2 3* hoặc *Chữ: C D E*).
+   * Chọn số ô nhịp hiển thị trên một dòng (mặc định là 4 ô nhịp/dòng).
+3. **Bước 3: Xem kết quả & Nghe thử:**
+   * Tờ nhạc sẽ hiện ra ở cột bên phải.
+   * Bấm nút **Phát âm thanh** để nghe giai điệu chạy mẫu.
+   * Bấm **Copy 1-Click** để lưu vào bộ nhớ tạm hoặc **In / Tải PDF** để in ra giấy A4 tập đàn.
 
-**Windows (PowerShell)**
-```powershell
-cd backend
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
+---
 
-**macOS / Linux**
-```bash
-cd backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
+## 🛠️ 4. Hướng Dẫn Chạy & Đưa Lên Mạng (Deployment Guide)
 
-- Cài lần đầu khá lâu và nặng (Basic Pitch kéo theo thư viện AI).
-- Mở http://localhost:8000/docs để thử API. `config.js` đã đặt sẵn `API_BASE: 'http://localhost:8000'`, nên bạn quay lại trang web là dùng được tab MP3 và YouTube.
-- Nếu Windows báo không cho chạy `Activate.ps1`: chạy `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` một lần rồi thử lại.
+### 🔴 Cách 1: Chạy trực tiếp trên máy tính (Local Development)
+1. Tải phần mềm **VS Code**.
+2. Tạo một file tên là `index.html` và dán toàn bộ mã nguồn vào.
+3. Nhấp đúp chuột (Double-click) vào file `index.html` đó để mở và chạy trực tiếp trên trình duyệt (Chrome/Edge/Firefox).
 
-## 5. Kho nhạc cộng đồng (Supabase, miễn phí)
+### 🌐 Cách 2: Đưa lên mạng miễn phí bằng GitHub Pages (Dành cho Newbie)
+1. Đăng nhập vào [GitHub.com](https://github.com/) và bấm **New repository** để tạo kho chứa mới (ví dụ đặt tên là `kalimba-notation`).
+2. Bấm **Upload an existing file** và kéo thả file `index.html` của bạn lên, sau đó chọn **Commit changes**.
+3. Vào mục **Settings** (Cài đặt) của repository $\rightarrow$ Chọn **Pages** ở cột menu bên trái.
+4. Tại mục **Branch**, chọn nhánh **`main`** (hoặc `master`) và bấm **Save**.
+5. Chờ 1–2 phút, GitHub sẽ cấp cho bạn một đường link trang web công khai (dạng `https://<ten-tai-khoan>.github.io/kalimba-notation/`) để gửi cho bạn bè cùng sử dụng!
 
-1. Tạo tài khoản và một project tại https://supabase.com.
-2. Vào **SQL Editor → New query**, dán toàn bộ `supabase/setup.sql`, bấm **Run**.
-3. Vào **Project Settings → API**, chép **Project URL** và khóa **anon public** vào `frontend/config.js`:
-   ```js
-   SUPABASE_URL: 'https://xxxx.supabase.co',
-   SUPABASE_ANON_KEY: 'eyJ...',
-   ```
-   Khóa `anon` được phép công khai vì quyền đã bị giới hạn bởi `setup.sql`. **Không bao giờ** dán khóa `service_role`.
-4. Thử: tải một file MIDI lên. Vào **Table Editor → songs**, bài sẽ nằm đó với `approved = false`.
-5. Muốn bài hiện trong kho công khai: bật `approved = true` cho bài đó.
+---
 
-Vì sao bài mới cần duyệt: ai cũng gửi bài được, nên nếu hiện công khai ngay thì kho dễ bị spam và dễ chứa nhạc vi phạm bản quyền. Giao diện có ô tích "Chia sẻ vào kho cộng đồng" hiển thị rõ để người dùng biết và tự quyết định.
+## 📜 5. Quy Chuẩn Viết Nốt (Text Notation Syntax)
 
-Nếu muốn dùng Firebase thay Supabase, bạn phải viết lại hai hàm `shareSong` và `loadCommunity` trong `app.js` (phần còn lại không đổi).
+Khi dùng ô **Dán nốt**, bạn có thể viết theo các quy tắc sau:
+* **Các nốt cơ bản:** `1 2 3 4 5 6 7` hoặc `C D E F G A B`.
+* **Nốt nghỉ:** `0`.
+* **Nốt kéo dài:** Dấu gạch ngang `-` (ví dụ: `1 - -`).
+* **Vạch nhịp:** Dấu gạch đứng `|`.
+* **Hợp âm:** Đặt trong ngoặc vuông trước nốt (ví dụ: `[Am] 6` hoặc `[C] C`).
+* **Ký hiệu cao độ:** 
+  * Cao hơn 1 quãng tám: `1'` hoặc `1*`. Cao hơn 2 quãng tám: `1''` hoặc `1**`.
+  * Thấp hơn 1 quãng tám: `1_`.
+* **Dấu thăng / giáng:** `C#`, `Bb`, `#4`, `b3`.
 
-## 6. Đưa lên mạng miễn phí
+---
 
-### 6.1. Đưa mã lên GitHub
-1. Tạo tài khoản https://github.com và một repository mới (ví dụ `kalimba-notation`).
-2. Trong VS Code, mở **Source Control** (biểu tượng nhánh) → **Initialize Repository** → nhập thông điệp → **Commit** → **Publish Branch**.
+## 📄 6. Giấy Phép & Bản Quyền (License & Disclaimer)
 
-### 6.2. Backend lên Render
-1. https://render.com → **New → Web Service** → chọn repository vừa tạo.
-2. **Root Directory**: `backend`. **Runtime / Language**: `Docker`. **Instance Type**: Free.
-3. Mục Environment, thêm biến `ALLOWED_ORIGINS` = địa chỉ Vercel của bạn (làm bước 6.3 xong quay lại điền, ví dụ `https://ky-am.vercel.app`).
-4. Bấm **Create Web Service**, chờ build xong sẽ có địa chỉ dạng `https://ten-app.onrender.com`. Mở địa chỉ đó, thấy `{"ok":true,...}` là chạy.
-
-### 6.3. Frontend lên Vercel
-1. Sửa `frontend/config.js`: đặt `API_BASE` thành địa chỉ Render ở trên. Commit và push lại.
-2. https://vercel.com → **Add New → Project** → chọn repository.
-3. **Root Directory**: `frontend`. **Framework Preset**: Other. Để trống Build Command. Bấm **Deploy**.
-4. Quay lại Render, điền `ALLOWED_ORIGINS` bằng địa chỉ Vercel vừa có rồi lưu.
-
-Từ đó mỗi lần bạn push mã mới lên GitHub, Vercel và Render tự cập nhật.
-
-## 7. Những giới hạn bạn nên biết trước
-
-- **MP3 và YouTube cho kết quả "gần đúng", không phải 100%.** Basic Pitch đoán nốt từ âm thanh, nên bài nhiều nhạc cụ hoặc còn tiếng hát sẽ ra nốt thừa hoặc sai. Dùng bản piano, nhạc không lời hoặc bản đã tách giọng sẽ tốt hơn nhiều. Chỉ file MIDI mới đọc chính xác.
-- **Nhịp của MP3/YouTube chỉ là ước chừng**: MIDI do AI tạo mặc định 120 BPM, chưa dò nhịp thật. Tên nốt thường đúng hơn độ dài nốt.
-- **Render miễn phí rất hạn chế**: RAM khoảng 512 MB có thể không đủ để nạp Basic Pitch, và máy chủ "ngủ" sau một thời gian không dùng (lần gọi đầu chờ khá lâu). Hãy kiểm tra giới hạn hiện tại trên trang Render. Nếu bị hết bộ nhớ, bạn có thể (a) chạy backend ở máy mình khi cần dùng MP3/YouTube, hoặc (b) đưa chính `backend/Dockerfile` lên Hugging Face Spaces (loại Docker, thường nhiều RAM miễn phí hơn; nhớ đặt cổng cho khớp) hoặc dịch vụ khác.
-- **YouTube hay chặn máy chủ đám mây.** Từ Render, `yt-dlp` thường gặp lỗi yêu cầu đăng nhập. Chạy backend ở máy bạn ổn định hơn. Có thể đặt biến `YT_COOKIES_FILE` trỏ đến file cookies, nhưng đó là việc nâng cao và có rủi ro cho tài khoản của bạn.
-- **OCR chỉ đọc được chữ và số rõ nét** (bản in). Chữ viết tay, ảnh nghiêng, mờ, hoặc dấu chấm trên/dưới số sẽ bị sai hoặc mất. Vì vậy kết quả OCR luôn được đưa vào ô văn bản để bạn sửa trước khi chuyển đổi.
-- **Ép về phím trắng**: phím đen được hạ xuống phím trắng ngay bên dưới (F# thành F). Bài nhiều nốt thăng giáng có thể nghe lệch giai điệu. Bỏ tích "Ép về phím trắng" nếu dùng Organ/Piano.
-- **Hợp âm** chỉ gồm 6 hợp âm thuận của Đô trưởng (C, Dm, Em, F, G, Am), đoán theo từng ô nhịp. Đây là gợi ý để đệm đơn giản, không phải bản phối chuẩn.
-- **Dải đàn**: sửa `min`/`max` trong `INSTRUMENTS` ở `converter.js` nếu đàn của bạn khác. Số MIDI: C4 = 60.
-
-## 8. Về bản quyền và dữ liệu người dùng
-
-- Tải nhạc từ YouTube có thể vi phạm điều khoản của YouTube và bản quyền tác giả. Hãy chỉ dùng để tự tập, và nếu mở dịch vụ công khai, hãy cân nhắc bỏ tính năng này hoặc tự chịu trách nhiệm pháp lý.
-- Kho cộng đồng lưu file và chuỗi nốt do người dùng gửi. Hãy giữ khâu duyệt bài, và ghi rõ trên trang chuyện gì được lưu (ô tích chia sẻ đã làm việc này). Nếu có người dùng ở EU hoặc nơi có luật bảo vệ dữ liệu, hãy tìm hiểu thêm các quy định liên quan.
-
-## 9. Ý tưởng mở rộng cho bạn tập code
-
-1. Thêm hợp âm G7, Bdim, hoặc đoán hợp âm theo nửa ô nhịp (hàm `detectChordsByBar`).
-2. Thêm nhạc cụ mới: chỉ cần thêm một dòng vào `INSTRUMENTS`.
-3. Dò nhịp thật cho MP3/YouTube bằng thư viện `librosa` ở backend.
-4. Cho phép người dùng sửa từng nốt trên màn hình rồi mới in.
+* Dự án được xây dựng vì mục đích học tập, chia sẻ cộng đồng phi thương mại.
+* Hãy tôn trọng bản quyền tác giả: Chỉ chuyển đổi và chia sẻ các tác phẩm âm nhạc mà bạn có quyền sử dụng.
